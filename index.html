@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate URI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2eT0+w4z6G2pB9zK0L1Zp5mD+3Wd+B+r+mB4+2O3Iq6e6Qj+w7G+F+g+w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Added JSZip library for file compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" xintegrity="sha512-y3o0su6GRj/SgFIpMy/2I2x3i29AYcsocv2+RjV9OpI1i15j6vPqoN8/Fp/2mSgdT/tOOV7N/rA/9V5Wp/P6Ag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #2563eb, #3b82f6);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #3b82f6, #60a5fa);
+        }
+
+        /* Hide spin buttons for number inputs */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: #0a0a1a;
+            color: #e0e0e0;
+            background-image: radial-gradient(circle at 10% 20%, #111827, #0a0a1a 80%);
+            overflow-y: auto;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: rgba(17, 24, 39, 0.95);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        .section-header {
+            background-image: linear-gradient(45deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.85rem 2rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+        .button-primary {
+            background-image: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            border: none;
+        }
+        .button-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        .button-secondary {
+            background-color: #1f2937;
+            color: #d1d5db;
+            border: 1px solid #374151;
+        }
+        .button-secondary:hover {
+            background-color: #374151;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+        .button-danger {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+        }
+        .button-danger:hover {
+            background-color: #b91c1c;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+        .message-box {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            pointer-events: none;
+        }
+        .message-box.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .input-field {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            color: #e0e0e0;
+            padding: 0.85rem 1.25rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .preview-container {
+            min-height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            padding: 1.5rem;
+            flex-grow: 1;
+            position: relative; /* For overlay positioning */
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+        .preview-container.left {
+            justify-content: flex-start;
+        }
+        .preview-container.right {
+            justify-content: flex-end;
+        }
+        .preview-container.dragover {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 1rem;
+            z-index: 10;
+        }
+        .preview-container.dragover .drag-overlay {
+            opacity: 1;
+        }
+        #previewContent {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .video-player {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        .video-player video, .video-player iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .video-player:hover .video-controls {
+            opacity: 1;
+        }
+        .video-controls button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .video-controls button:hover {
+            color: #3b82f6;
+        }
+        .progress-bar {
+            flex-grow: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 0 1rem;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: #2563eb;
+            width: 0%;
+            border-radius: 3px;
+        }
+        .custom-select {
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+        }
+        .custom-select-trigger {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            color: #e0e0e0;
+            padding: 0.85rem 1.25rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+        .custom-select-trigger:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .custom-options-container {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .custom-options-container.open {
+            max-height: 200px;
+            opacity: 1;
+            overflow-y: auto;
+        }
+        .custom-option {
+            padding: 0.85rem 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .custom-option:hover {
+            background-color: #374151;
+        }
+        .custom-option.selected {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+        .color-input-group {
+            display: flex;
+            align-items: center;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .color-input-group:focus-within {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .hex-input-prefix {
+            color: #e0e0e0;
+        }
+        .hex-input {
+            background: none;
+            border: none;
+            color: #e0e0e0;
+            padding-left: 0.5rem;
+            width: 100%;
+            font-size: 0.875rem;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-center section-header">Files to URI Generator</h1>
+        <p class="text-sm text-gray-400 text-center -mt-4">
+            Embed local files, media, or external links directly into your code.
+        </p>
+
+        <!-- Main Content Area -->
+        <div class="flex flex-col gap-10">
+            <!-- File & Link Input Section -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold section-header">File Source</h2>
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <input type="text" id="urlInput" placeholder="Paste a link here" class="input-field w-full sm:w-1/2">
+                    <label for="fileInput" class="button button-primary cursor-pointer w-full sm:w-1/2">
+                        <i class="fas fa-upload mr-2"></i>
+                        Upload File
+                    </label>
+                    <!-- Updated file input to accept more types -->
+                    <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.zip,.rar,.pdf,.doc,.docx,.txt,.html,.css,.js" class="hidden">
+                </div>
+                 <!-- Progress Bar Section -->
+                <div id="progressSection" class="hidden space-y-2 pt-4">
+                    <div class="flex justify-between">
+                        <span id="progressLabel" class="text-sm font-medium text-gray-300">Processing...</span>
+                        <span id="progressText" class="text-sm font-medium text-gray-300">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supported Files Information -->
+            <div class="space-y-2 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                <h3 class="text-lg font-bold section-header">Supported Files</h3>
+                <p class="text-xs text-gray-400">
+                    You can generate a Data URI for various file types. Files over 50MB will be automatically compressed.
+                </p>
+                <ul class="text-sm text-gray-300 list-disc list-inside grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                    <li>Images (PNG, JPG)</li>
+                    <li>Videos (MP4, WEBM)</li>
+                    <li>Audio (MP3, WAV)</li>
+                    <li>Documents (PDF, DOCX)</li>
+                    <li>Archives (ZIP, RAR)</li>
+                    <li>Code (HTML, CSS, JS)</li>
+                </ul>
+            </div>
+
+            <!-- Preview & Code -->
+            <div class="space-y-8">
+                <!-- Live Preview Section -->
+                <div class="space-y-2">
+                    <h2 class="text-xl font-bold section-header">Live Preview</h2>
+                    <div id="previewContainer" class="preview-container">
+                        <div id="previewContent">
+                           <span class="text-gray-500 text-sm">Preview will appear here, or drop a file to start.</span>
+                        </div>
+                        <div class="drag-overlay">
+                            <i class="fas fa-file-import fa-beat-fade text-6xl text-blue-400 mb-4" style="--fa-beat-fade-opacity: 0.67; --fa-beat-fade-scale: 1.075;"></i>
+                            <span class="text-white font-semibold text-lg">Drop your file to begin</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Code & Controls Section -->
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold section-header">Generated Code</h2>
+                    
+                    <div class="space-y-4">
+                        <input type="text" id="altNameInput" placeholder="Alt text / File Name" class="input-field">
+                        <div class="custom-select" data-select-id="resizeMethod">
+                            <div class="custom-select-trigger" tabindex="0">
+                                <span>Width and Height (px)</span>
+                                <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
+                            </div>
+                            <div class="custom-options-container">
+                                <div class="custom-option" data-value="dimensions">Width and Height (px)</div>
+                                <div class="custom-option" data-value="percentage">Percentage (%)</div>
+                            </div>
+                        </div>
+                        <div id="dimensionsInputs" class="flex flex-col sm:flex-row gap-4">
+                            <input type="number" id="widthInput" placeholder="Width" class="input-field w-full sm:w-1/2">
+                            <input type="number" id="heightInput" placeholder="Height" class="input-field w-full sm:w-1/2">
+                        </div>
+                        <div id="percentageInput" class="hidden">
+                            <input type="number" id="percentageValue" placeholder="Percentage (1-100)" min="1" max="100" class="input-field">
+                        </div>
+
+                        <!-- Updated Border Options with Border Radius -->
+                        <div class="flex flex-col sm:flex-row gap-4 items-center">
+                            <input type="number" id="borderThickness" placeholder="Thickness (px)" class="input-field w-full sm:w-1/4">
+                            <input type="number" id="borderRadius" placeholder="Radius (px)" class="input-field w-full sm:w-1/4">
+                            <div class="custom-select w-full sm:w-1/4" data-select-id="borderStyle">
+                                <div class="custom-select-trigger" tabindex="0">
+                                    <span>No Border</span>
+                                    <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
+                                </div>
+                                <div class="custom-options-container">
+                                    <div class="custom-option" data-value="">No Border</div>
+                                    <div class="custom-option" data-value="solid">Solid</div>
+                                    <div class="custom-option" data-value="dashed">Dashed</div>
+                                    <div class="custom-option" data-value="dotted">Dotted</div>
+                                    <div class="custom-option" data-value="double">Double</div>
+                                    <div class="custom-option" data-value="groove">Groove</div>
+                                </div>
+                            </div>
+                            <!-- New Color Input with Integrated Preview -->
+                            <div class="w-full sm:w-1/4 color-input-group">
+                                <span class="hex-input-prefix">#</span>
+                                <input type="text" id="borderColorHex" value="000000" class="hex-input" maxlength="6">
+                            </div>
+                        </div>
+
+                        <!-- Updated Alignment Option -->
+                        <div class="custom-select" data-select-id="alignment">
+                            <div class="custom-select-trigger" tabindex="0">
+                                <span>No Alignment</span>
+                                <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
+                            </div>
+                            <div class="custom-options-container">
+                                <div class="custom-option" data-value="none">No Alignment</div>
+                                <div class="custom-option" data-value="center">Center</div>
+                                <div class="custom-option" data-value="left">Left</div>
+                                <div class="custom-option" data-value="right">Right</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <textarea id="uriOutput" class="w-full h-32 input-field text-xs sm:text-sm" placeholder="Your Data URI will be generated here..." readonly></textarea>
+                    
+                    <textarea id="htmlOutput" class="w-full h-32 input-field text-xs sm:text-sm" placeholder="Your HTML code will be generated here..." readonly></textarea>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="copyUriButton" class="button button-secondary w-full">
+                    <i class="fas fa-copy mr-2"></i>
+                    Copy URI
+                </button>
+                <button id="copyHtmlButton" class="button button-secondary w-full">
+                    <i class="fas fa-code mr-2"></i>
+                    Copy HTML
+                </button>
+                <button id="downloadHtmlButton" class="button button-primary w-full">
+                    <i class="fas fa-download mr-2"></i>
+                    Download HTML
+                </button>
+                <button id="clearButton" class="button button-danger w-full">
+                    <i class="fas fa-eraser mr-2"></i>
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Message Box -->
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <!-- Custom Context Menu for File Details -->
+    <div id="fileContextMenu" class="hidden fixed bg-gray-800 border border-gray-600 rounded-md shadow-lg p-3 text-sm text-gray-200 z-50">
+        <div class="font-bold mb-2 pb-2 border-b border-gray-600" id="contextFileName">File Name</div>
+        <ul class="space-y-1">
+            <li class="flex justify-between"><span class="font-semibold text-gray-400 mr-4">Type:</span> <span id="contextFileType"></span></li>
+            <li class="flex justify-between"><span class="font-semibold text-gray-400 mr-4">Size:</span> <span id="contextFileSize"></span></li>
+            <li class="flex justify-between hidden" id="contextDimensionsItem"><span class="font-semibold text-gray-400 mr-4">Dimensions:</span> <span id="contextFileDimensions"></span></li>
+        </ul>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const urlInput = document.getElementById('urlInput');
+        const altNameInput = document.getElementById('altNameInput');
+        const uriOutput = document.getElementById('uriOutput');
+        const htmlOutput = document.getElementById('htmlOutput');
+        const dimensionsInputs = document.getElementById('dimensionsInputs');
+        const percentageInput = document.getElementById('percentageInput');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const percentageValueInput = document.getElementById('percentageValue');
+        const borderThicknessInput = document.getElementById('borderThickness');
+        const borderRadiusInput = document.getElementById('borderRadius');
+        const borderColorHexInput = document.getElementById('borderColorHex');
+        const colorInputGroup = document.querySelector('.color-input-group');
+        const hexInputPrefix = document.querySelector('.hex-input-prefix');
+        const copyUriButton = document.getElementById('copyUriButton');
+        const copyHtmlButton = document.getElementById('copyHtmlButton');
+        const downloadHtmlButton = document.getElementById('downloadHtmlButton');
+        const clearButton = document.getElementById('clearButton');
+        const messageBox = document.getElementById('messageBox');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewContent = document.getElementById('previewContent');
+        const progressSection = document.getElementById('progressSection');
+        const progressLabel = document.getElementById('progressLabel');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const fileContextMenu = document.getElementById('fileContextMenu');
+        
+        let activeSource = ''; // 'file' or 'url'
+        let myWorker;
+        let animationFrameId;
+        let currentFile = null;
+
+        // Utility function to show a custom message box
+        function showMessage(text, isError = false) {
+            messageBox.textContent = text;
+            messageBox.style.backgroundColor = isError ? '#dc2626' : '#2563eb';
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Bytes'
+
+            const k = 1024
+            const dm = decimals < 0 ? 0 : decimals
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+            const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+        }
+
+        // Function to determine contrast color based on luminance
+        function getContrastColor(hexcolor) {
+            if (!hexcolor || hexcolor.length < 6) {
+                return '#000000';
+            }
+            const r = parseInt(hexcolor.substr(0, 2), 16);
+            const g = parseInt(hexcolor.substr(2, 2), 16);
+            const b = parseInt(hexcolor.substr(4, 2), 16);
+            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return (yiq >= 128) ? '#000000' : '#ffffff';
+        }
+
+        // Custom dropdown logic
+        document.querySelectorAll('.custom-select-trigger').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const optionsContainer = trigger.nextElementSibling;
+                document.querySelectorAll('.custom-options-container.open').forEach(openContainer => {
+                    if (openContainer !== optionsContainer) openContainer.classList.remove('open');
+                });
+                optionsContainer.classList.toggle('open');
+            });
+            trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); } });
+        });
+
+        document.querySelectorAll('.custom-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const parent = option.closest('.custom-select');
+                parent.querySelector('.custom-select-trigger span').textContent = option.textContent;
+                parent.querySelector('.custom-options-container').classList.remove('open');
+                parent.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+
+                const selectId = parent.dataset.selectId;
+                if (selectId === 'resizeMethod') {
+                    if (option.dataset.value === 'dimensions') {
+                        dimensionsInputs.classList.remove('hidden');
+                        percentageInput.classList.add('hidden');
+                    } else {
+                        dimensionsInputs.classList.add('hidden');
+                        percentageInput.classList.remove('hidden');
+                    }
+                }
+                updateHtmlOutput();
+                if (selectId === 'alignment') {
+                    const source = activeSource === 'file' ? uriOutput.value : urlInput.value;
+                    if (source) createPreview(source, activeSource === 'file' ? getMimeFromDataURI(uriOutput.value) : 'auto');
+                }
+            });
+        });
+        window.addEventListener('click', e => { 
+            if (!e.target.closest('.custom-select')) {
+                document.querySelectorAll('.custom-options-container').forEach(c => c.classList.remove('open'));
+            }
+            fileContextMenu.classList.add('hidden');
+        });
+        
+        function getMimeFromDataURI(dataURI) {
+            if (!dataURI) return 'application/octet-stream';
+            return dataURI.substring(dataURI.indexOf(':') + 1, dataURI.indexOf(';'));
+        }
+
+        function getYouTubeId(url) {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            return url.match(regex)?.[1] || null;
+        }
+
+        function createPreview(source, fileType) {
+            previewContent.innerHTML = '';
+            
+            const alignmentValue = document.querySelector('[data-select-id="alignment"] .custom-option.selected')?.dataset.value;
+            previewContainer.className = 'preview-container'; // Reset classes
+            if (alignmentValue === 'left') previewContainer.classList.add('left');
+            else if (alignmentValue === 'right') previewContainer.classList.add('right');
+
+            const youtubeId = getYouTubeId(source);
+            if (youtubeId) {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${youtubeId}`;
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.className = "rounded-lg w-full h-full";
+                previewContent.appendChild(iframe);
+                return;
+            }
+
+            if (fileType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = source;
+                img.alt = "Live Preview";
+                img.className = "max-w-full h-auto rounded-lg";
+                previewContent.appendChild(img);
+            } else if (fileType.startsWith('video/')) {
+                 const videoPlayerDiv = document.createElement('div');
+                videoPlayerDiv.className = "video-player";
+                const mediaElement = document.createElement('video');
+                mediaElement.src = source;
+                mediaElement.className = "rounded-lg w-full h-full";
+                videoPlayerDiv.appendChild(mediaElement);
+                // Simplified controls for preview
+                mediaElement.controls = true;
+                previewContent.appendChild(videoPlayerDiv);
+            } else if (fileType.startsWith('audio/')) {
+                 previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
+                        <i class="fas fa-music text-6xl text-blue-500 mb-4"></i>
+                        <audio controls class="w-full" src="${source}"></audio>
+                    </div>`;
+            } else if (fileType.includes('zip') || fileType.includes('archive')) {
+                 previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
+                        <i class="fas fa-file-archive text-6xl text-yellow-500 mb-4"></i>
+                        <span class="text-white font-semibold">ZIP Archive</span>
+                    </div>`;
+            } else if (fileType.includes('pdf')) {
+                previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
+                        <i class="fas fa-file-pdf text-6xl text-red-500 mb-4"></i>
+                        <span class="text-white font-semibold">PDF Document</span>
+                    </div>`;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
+                        <i class="fas fa-file-alt text-6xl text-gray-400 mb-4"></i>
+                        <span class="text-white font-semibold">File</span>
+                    </div>`;
+            }
+        }
+
+        function updateHtmlOutput() {
+            let width = '';
+            let height = '';
+            let style = '';
+            
+            const resizeMethod = document.querySelector('[data-select-id="resizeMethod"] .custom-option.selected')?.dataset.value || 'dimensions';
+            const borderStyle = document.querySelector('[data-select-id="borderStyle"] .custom-option.selected')?.dataset.value || '';
+            const alignment = document.querySelector('[data-select-id="alignment"] .custom-option.selected')?.dataset.value || 'none';
+            
+            if (resizeMethod === 'dimensions') {
+                if (widthInput.value) width = `width="${widthInput.value}"`;
+                if (heightInput.value) height = `height="${heightInput.value}"`;
+            } else {
+                if (percentageValueInput.value) width = `width="${percentageValueInput.value}%"`;
+            }
+
+            const thickness = borderThicknessInput.value;
+            const radius = borderRadiusInput.value;
+            const color = '#' + borderColorHexInput.value;
+            if (thickness && borderStyle) style += `border: ${thickness}px ${borderStyle} ${color};`;
+            if (radius) style += `border-radius: ${radius}px;`;
+
+            if (alignment !== 'none') {
+                style += `display: block;`;
+                if (alignment === 'center') style += `margin-left: auto; margin-right: auto;`;
+                else if (alignment === 'left') style += `margin-right: auto;`;
+                else if (alignment === 'right') style += `margin-left: auto;`;
+            }
+
+            if (style) style = `style="${style}"`;
+           
+            const altText = altNameInput.value ? altNameInput.value : 'media';
+            
+            let htmlString = '';
+            let source = activeSource === 'file' ? uriOutput.value : urlInput.value;
+
+            const youtubeId = getYouTubeId(urlInput.value);
+            if (youtubeId) {
+                htmlString = `<iframe src="https://www.youtube.com/embed/${youtubeId}" ${width} ${height} frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen ${style}></iframe>`;
+            } else if (source) {
+                const mimeType = activeSource === 'file' ? getMimeFromDataURI(source) : (source.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? 'image/jpeg' : 'video/mp4');
+
+                if (mimeType.startsWith('image/')) {
+                    htmlString = `<img src="${source}" alt="${altText}" ${width} ${height} ${style}>`;
+                } else if (mimeType.startsWith('video/')) {
+                    htmlString = `<video controls ${width} ${height} ${style}><source src="${source}" type="${mimeType}"></video>`;
+                } else if (mimeType.startsWith('audio/')) {
+                    htmlString = `<audio controls ${width} ${height} ${style}><source src="${source}" type="${mimeType}"></audio>`;
+                } else {
+                    // Fallback for other file types like zip, pdf, etc. is a download link.
+                    htmlString = `<a href="${source}" download="${altText}" ${style}>Download ${altText}</a>`;
+                }
+            }
+            htmlOutput.value = htmlString;
+        }
+
+        const workerScript = `
+            self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+
+            let timeoutId = null;
+
+            self.onmessage = function(e) {
+                // Clear any previous timeout
+                if (timeoutId) clearTimeout(timeoutId);
+
+                const file = e.data;
+                const maxSizeBytes = 50 * 1024 * 1024;
+                const COMPRESSION_TIMEOUT = 30000; // 30 seconds
+
+                timeoutId = setTimeout(() => {
+                    self.postMessage({ type: 'error', message: 'Compression timed out. The file may be too large.' });
+                }, COMPRESSION_TIMEOUT);
+
+                const handleFileData = (data, type) => {
+                    const reader = new FileReader();
+                    reader.onprogress = (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = Math.round((event.loaded / event.total) * 100);
+                            self.postMessage({ type: 'progress', stage: 'Reading', percent: percentComplete });
+                        }
+                    };
+                    reader.onload = (e) => {
+                        clearTimeout(timeoutId);
+                        self.postMessage({ type: 'result', dataURI: e.target.result, mimeType: type });
+                    };
+                    reader.onerror = () => {
+                        clearTimeout(timeoutId);
+                        self.postMessage({ type: 'error', message: 'Error reading file.' });
+                    };
+                    reader.readAsDataURL(data);
+                };
+
+                if (file.size > maxSizeBytes) {
+                    try {
+                        const zip = new self.JSZip();
+                        zip.file(file.name, file);
+                        zip.generateAsync(
+                            { type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } },
+                            (metadata) => {
+                                self.postMessage({ type: 'progress', stage: 'Compressing', percent: Math.round(metadata.percent) });
+                            }
+                        ).then((content) => {
+                            handleFileData(content, 'application/zip');
+                        }).catch((err) => {
+                            clearTimeout(timeoutId);
+                            self.postMessage({ type: 'error', message: 'Compression failed: ' + err.message });
+                        });
+                    } catch (err) {
+                        clearTimeout(timeoutId);
+                        self.postMessage({ type: 'error', message: 'Compression failed unexpectedly: ' + err.message });
+                    }
+                } else {
+                    handleFileData(file, file.type);
+                }
+            };
+        `;
+        const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
+        function handleFile(file) {
+            if (!file) return;
+            
+            currentFile = file; // Store the file for context menu
+            altNameInput.value = file.name; // Update alt text field
+
+            const EXTREME_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+            if (file.size > EXTREME_FILE_SIZE) {
+                showMessage('File is very large and may crash the browser. Proceed with caution.', true);
+            }
+
+            progressSection.classList.remove('hidden');
+            let currentProgress = 0;
+            
+            const updateProgressBar = (targetPercent) => {
+                cancelAnimationFrame(animationFrameId);
+                
+                const animate = () => {
+                    const easingFactor = 0.08;
+                    const distance = targetPercent - currentProgress;
+
+                    if (Math.abs(distance) < 0.1) {
+                        currentProgress = targetPercent;
+                    } else {
+                        currentProgress += distance * easingFactor;
+                    }
+                    
+                    progressBar.style.width = currentProgress + '%';
+                    progressText.textContent = Math.floor(currentProgress) + '%';
+
+                    if (currentProgress < targetPercent) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    }
+                };
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            
+            updateProgressBar(0);
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            progressLabel.textContent = 'Preparing...';
+            uriOutput.value = '';
+            htmlOutput.value = '';
+            previewContent.innerHTML = '<span class="text-gray-500 text-sm">Processing file...</span>';
+
+            activeSource = 'file';
+            urlInput.value = '';
+            
+            if (myWorker) myWorker.terminate();
+            myWorker = new Worker(workerUrl);
+
+            myWorker.onmessage = (e) => {
+                const { type, stage, percent, dataURI, mimeType, message } = e.data;
+                if (type === 'progress') {
+                    progressLabel.textContent = stage + '...';
+                    updateProgressBar(percent);
+                } else if (type === 'result') {
+                    updateProgressBar(100);
+                    setTimeout(() => {
+                        uriOutput.value = dataURI;
+                        updateHtmlOutput();
+                        createPreview(dataURI, mimeType);
+                        showMessage('URI and HTML generated!');
+                        setTimeout(() => progressSection.classList.add('hidden'), 500);
+                        if (myWorker) myWorker.terminate();
+                    }, 300);
+                } else if (type === 'error') {
+                    showMessage(message, true);
+                    progressSection.classList.add('hidden');
+                    if (myWorker) myWorker.terminate();
+                }
+            };
+            
+            myWorker.onerror = (e) => {
+                showMessage(`A worker error occurred: ${e.message}`, true);
+                progressSection.classList.add('hidden');
+                if (myWorker) myWorker.terminate();
+            };
+
+            myWorker.postMessage(file);
+        }
+
+        fileInput.addEventListener('change', (event) => {
+            handleFile(event.target.files[0]);
+        });
+
+        const dropZone = document.querySelector('.container');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                previewContainer.classList.add('dragover');
+            });
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                previewContainer.classList.remove('dragover');
+            }
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            previewContainer.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(files[0]);
+                fileInput.files = dataTransfer.files;
+                handleFile(files[0]);
+            }
+        });
+
+        previewContent.addEventListener('contextmenu', (e) => {
+            if (!currentFile) return;
+            e.preventDefault();
+
+            // Populate menu
+            document.getElementById('contextFileName').textContent = currentFile.name;
+            document.getElementById('contextFileType').textContent = currentFile.type || 'N/A';
+            document.getElementById('contextFileSize').textContent = formatBytes(currentFile.size);
+
+            const dimensionsItem = document.getElementById('contextDimensionsItem');
+            const dimensionsSpan = document.getElementById('contextFileDimensions');
+            const mediaElement = previewContent.querySelector('img, video');
+
+            dimensionsItem.classList.add('hidden'); // Hide by default
+            if (mediaElement) {
+                const isImage = mediaElement.tagName === 'IMG';
+                const width = isImage ? mediaElement.naturalWidth : mediaElement.videoWidth;
+                const height = isImage ? mediaElement.naturalHeight : mediaElement.videoHeight;
+                
+                if (width && height) {
+                    dimensionsSpan.textContent = `${width} x ${height} px`;
+                    dimensionsItem.classList.remove('hidden');
+                }
+            }
+            
+            // Position and show menu
+            fileContextMenu.style.left = `${e.clientX}px`;
+            fileContextMenu.style.top = `${e.clientY}px`;
+            fileContextMenu.classList.remove('hidden');
+        });
+
+        urlInput.addEventListener('input', () => {
+            const url = urlInput.value;
+            if (url) {
+                activeSource = 'url';
+                currentFile = null;
+                fileInput.value = '';
+                uriOutput.value = '';
+                updateHtmlOutput();
+                createPreview(url, 'auto');
+            }
+        });
+        
+        borderColorHexInput.addEventListener('input', (e) => {
+            const hex = e.target.value.replace(/[^0-9a-fA-F]/g, '');
+            e.target.value = hex;
+            if (hex.length === 6) {
+                const contrastColor = getContrastColor(hex);
+                colorInputGroup.style.backgroundColor = `#${hex}`;
+                hexInputPrefix.style.color = contrastColor;
+                borderColorHexInput.style.color = contrastColor;
+                updateHtmlOutput();
+            }
+        });
+
+        [widthInput, heightInput, percentageValueInput, altNameInput, borderThicknessInput, borderRadiusInput].forEach(input => {
+            input.addEventListener('input', updateHtmlOutput);
+        });
+
+        copyUriButton.addEventListener('click', () => {
+            if (!uriOutput.value) return showMessage('No URI to copy.', true);
+            navigator.clipboard.writeText(uriOutput.value).then(() => showMessage('Data URI Copied!'), () => showMessage('Copy failed.', true));
+        });
+
+        copyHtmlButton.addEventListener('click', () => {
+             if (!htmlOutput.value) return showMessage('No HTML to copy.', true);
+            navigator.clipboard.writeText(htmlOutput.value).then(() => showMessage('HTML Code Copied!'), () => showMessage('Copy failed.', true));
+        });
+
+        downloadHtmlButton.addEventListener('click', () => {
+            if (htmlOutput.value) {
+                const blob = new Blob([htmlOutput.value], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = (altNameInput.value || 'generated_media') + '.html';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showMessage('File ready for download!');
+            } else {
+                showMessage('Nothing to download.', true);
+            }
+        });
+
+        clearButton.addEventListener('click', () => {
+            if (myWorker) myWorker.terminate();
+            cancelAnimationFrame(animationFrameId);
+            progressSection.classList.add('hidden');
+            fileInput.value = '';
+            urlInput.value = '';
+            uriOutput.value = '';
+            htmlOutput.value = '';
+            widthInput.value = '';
+            heightInput.value = '';
+            percentageValueInput.value = '';
+            altNameInput.value = '';
+            borderThicknessInput.value = '';
+            borderRadiusInput.value = '';
+            borderColorHexInput.value = '000000';
+            colorInputGroup.style.backgroundColor = '#1f2937';
+            hexInputPrefix.style.color = '#e0e0e0';
+            borderColorHexInput.style.color = '#e0e0e0';
+            activeSource = '';
+            currentFile = null;
+            
+            document.querySelectorAll('.custom-select').forEach(sel => {
+                const firstOption = sel.querySelector('.custom-option');
+                sel.querySelector('.custom-select-trigger span').textContent = firstOption.textContent;
+                sel.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                firstOption.classList.add('selected');
+            });
+            dimensionsInputs.classList.remove('hidden');
+            percentageInput.classList.add('hidden');
+
+            previewContent.innerHTML = '<span class="text-gray-500 text-sm">Preview will appear here, or drop a file to start.</span>';
+            previewContainer.classList.remove('left', 'right');
+            showMessage('Cleared!');
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             document.querySelectorAll('.custom-select').forEach(sel => {
+                const firstOption = sel.querySelector('.custom-option');
+                sel.querySelector('.custom-select-trigger span').textContent = firstOption.textContent;
+                firstOption.classList.add('selected');
+             });
+        });
+    </script>
+
+</body>
+</html>
+
