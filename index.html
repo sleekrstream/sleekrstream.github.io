@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate URI</title>
+    <title>GenURI - Files to URI Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2eT0+w4z6G2pB9zK0L1Zp5mD+3Wd+B+r+mB4+2O3Iq6e6Qj+w7G+F+g+w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-	<link rel="icon" href="https://i.ibb.co/hxPXqSgV/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom.png" sizes="any">
-	<link rel="icon" href="https://i.ibb.co/hxPXqSgV/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom.png" type="image/svg+xml">
-	<link rel="apple-touch-icon" href="https://i.ibb.co/hxPXqSgV/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom.png"> <link rel="manifest" href="manifest.webmanifest">
+	<link rel="icon" href="https://i.ibb.co/pP3gVfW/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom-1.png" sizes="any">
+	<link rel="icon" href="https://i.ibb.co/pP3gVfW/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom-1.png" type="image/svg+xml">
+	<link rel="apple-touch-icon" href="https://i.ibb.co/pP3gVfW/Gemini-Generated-Image-ow3pezow3pezow3p-Photoroom-1.png"> <link rel="manifest" href="manifest.webmanifest">
     <!-- Added JSZip library for file compression -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" xintegrity="sha512-y3o0su6GRj/SgFIpMy/2I2x3i29AYcsocv2+RjV9OpI1i15j6vPqoN8/Fp/2mSgdT/tOOV7N/rA/9V5Wp/P6Ag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
@@ -51,7 +51,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 1.5rem;
+            padding: 1rem;
             background-color: #0a0a1a;
             color: #e0e0e0;
             background-image: radial-gradient(circle at 10% 20%, #111827, #0a0a1a 80%);
@@ -61,7 +61,7 @@
             width: 100%;
             max-width: 800px;
             background-color: rgba(17, 24, 39, 0.95);
-            padding: 2.5rem;
+            padding: 1.5rem;
             border-radius: 1rem;
             backdrop-filter: blur(15px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
@@ -71,6 +71,17 @@
             gap: 2.5rem;
             animation: fadeIn 0.8s ease-out forwards;
         }
+
+        /* Responsive padding for larger screens */
+        @media (min-width: 640px) {
+             body {
+                padding: 1.5rem;
+            }
+            .container {
+                padding: 2.5rem;
+            }
+        }
+
         .section-header {
             background-image: linear-gradient(45deg, #3b82f6, #60a5fa);
             -webkit-background-clip: text;
@@ -344,8 +355,12 @@
 <body>
 
     <div class="container">
-        <h1 class="text-4xl sm:text-5xl font-extrabold text-center section-header">Files to URI Generator</h1>
-        <p class="text-sm text-gray-400 text-center -mt-4">
+        <!-- New Logo Header -->
+        <div class="flex items-center justify-center gap-3 sm:gap-4">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-center section-header tracking-wider">GenURI</h1>
+        </div>
+        
+        <p class="text-sm text-gray-400 text-center -mt-8">
             Embed local files, media, or external links directly into your code.
         </p>
 
@@ -1062,4 +1077,3 @@
 
 </body>
 </html>
-
