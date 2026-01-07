@@ -2,17 +2,15 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SleekrStream</title>
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- HLS.js for m3u8 support -->
-<!-- OPTIMIZATION: Deferred script loading to prevent render-blocking -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js" defer></script>
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest" defer></script>
 <!-- Google Fonts -->
-<!-- OPTIMIZATION: Asynchronously load fonts to prevent render-blocking -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -47,7 +45,7 @@
                     'fade-in': 'fadeIn 0.3s ease-out forwards',
                     'pulse-slow': 'pulseSlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     'heart-beat': 'heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    'pop-up': 'popUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 },
                 keyframes: {
                     slideIn: {
@@ -58,6 +56,10 @@
                         '0%': { opacity: '0', transform: 'scale(0.98)' },
                         '100%': { opacity: '1', transform: 'scale(1)' },
                     },
+                    popUp: {
+                        '0%': { opacity: '0', transform: 'scale(0.95) translateY(10px)' },
+                        '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+                    },
                     pulseSlow: {
                         '50%': { opacity: '.6' },
                     },
@@ -65,10 +67,6 @@
                         '0%': { transform: 'scale(1)' },
                         '50%': { transform: 'scale(1.3)' },
                         '100%': { transform: 'scale(1)' },
-                    },
-                    slideUp: {
-                        '0%': { transform: 'translateY(10px)', opacity: '0' },
-                        '100%': { transform: 'translateY(0)', opacity: '1' },
                     }
                 }
             }
@@ -242,11 +240,11 @@
 
     /* UI Auto-hide */
     .ui-element {
-        transition: opacity 0.4s ease-in-out;
+        transition: opacity 0.3s ease-in-out;
     }
     .ui-hidden {
-        opacity: 0;
-        pointer-events: none;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 
     /* Prevent drag on images */
@@ -265,6 +263,10 @@
         transform: scale(1.1); /* To avoid harsh edges from the video appearing */
     }
 
+    /* Popup Menu for Mobile */
+    .mobile-menu-enter {
+        animation: popUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
 </style>
 </head>
 <body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-row antialiased selection:bg-brand-500 selection:text-white">
@@ -363,7 +365,7 @@
     <!-- Video Container -->
     <div class="relative flex-1 bg-black flex items-center justify-center group overflow-hidden" id="videoContainer">
         
-        <!-- NEW: Background Canvas -->
+        <!-- Background Canvas -->
         <canvas id="backgroundCanvas" class="absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 opacity-0"></canvas>
         
         <!-- Video Element -->
@@ -380,7 +382,7 @@
         </div>
 
         <!-- Loading Overlay -->
-        <div id="loadingOverlay" class="absolute inset-0 bg-dark-surface/80 flex flex-col items-center justify-center z-10 hidden backdrop-blur-md animate-fade-in">
+        <div id="loadingOverlay" class="absolute inset-0 bg-dark-surface/80 flex flex-col items-center justify-center z-10 hidden backdrop-blur-md animate-fade-in pointer-events-none">
             <div class="loader mb-6"></div>
             <h3 class="text-lg font-medium text-white mb-2 tracking-wide" id="loadingTitle">Connecting to Stream</h3>
             <p id="loadingStatus" class="text-sm text-brand-400 opacity-80 animate-pulse-slow">Please wait a moment...</p>
@@ -421,47 +423,45 @@
             </div>
         </div>
 
-        <!-- Controls Overlay -->
-        <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 z-20 ui-element ui-hidden">
+        <!-- CONTROLS OVERLAY -->
+        <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 p-3 sm:p-4 z-20 glass rounded-[24px] ui-element ui-hidden">
             
-            <!-- Secondary Controls Menu -->
-            <div id="secondaryControlsMenu" class="absolute bottom-full right-0 mb-3 glass rounded-2xl p-2 flex-col items-start gap-1 hidden animate-slide-up shadow-2xl">
-                <button onclick="toggleAspect()" class="w-full flex items-center gap-3 text-left text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
-                    <i data-lucide="scan" class="w-5 h-5"></i> <span class="text-sm">Aspect Ratio</span>
+            <!-- Mobile Specific Menu (Popup) -->
+            <div id="mobileMenuOptions" class="absolute bottom-full right-0 mb-3 glass rounded-2xl p-2 hidden flex-col gap-1 w-48 shadow-2xl border border-white/10 mobile-menu-enter">
+                <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                    <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
                 </button>
-                <button onclick="takeSnapshot()" class="w-full flex items-center gap-3 text-left text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
-                    <i data-lucide="camera" class="w-5 h-5"></i> <span class="text-sm">Snapshot</span>
+                <button onclick="takeSnapshot(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                    <i data-lucide="camera" class="w-4 h-4 text-brand-400"></i> Snapshot
                 </button>
-                <button onclick="toggleCaptions()" id="ccBtn" disabled class="w-full flex items-center gap-3 text-left text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition relative disabled:opacity-30 disabled:cursor-not-allowed active:scale-95">
-                    <i data-lucide="subtitles" class="w-5 h-5"></i> <span class="text-sm">Captions</span>
-                    <span id="ccBadge" class="absolute top-1/2 -translate-y-1/2 right-3 w-1.5 h-1.5 bg-brand-500 rounded-full hidden shadow-lg"></span>
+                <button onclick="toggleCaptions(); closeMobileMenu()" id="mobileCcBtn" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200 disabled:opacity-50">
+                    <i data-lucide="subtitles" class="w-4 h-4 text-brand-400"></i> Captions
                 </button>
-                <button onclick="togglePiP()" class="w-full flex items-center gap-3 text-left text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
-                    <i data-lucide="picture-in-picture-2" class="w-5 h-5"></i> <span class="text-sm">Picture in Picture</span>
+                <button onclick="togglePiP(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                    <i data-lucide="picture-in-picture-2" class="w-4 h-4 text-brand-400"></i> PiP Mode
                 </button>
-                 <button onclick="toggleStats()" class="w-full flex items-center gap-3 text-left text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> <span class="text-sm">Nerd Stats</span>
+                <button onclick="toggleStats(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-400"></i> Stats
                 </button>
             </div>
 
-            <!-- Main Controls Bar -->
-            <div class="flex justify-between items-center select-none flex-wrap gap-y-2 glass rounded-[24px] p-3 sm:p-4">
-                <!-- Left Controls -->
-                <div class="flex items-center gap-3 sm:gap-5">
-                    <button onclick="togglePlay()" class="text-white hover:text-brand-400 transition transform active:scale-90 outline-none group/play">
-                        <i data-lucide="play" id="playIcon" class="w-8 h-8 fill-white group-hover/play:fill-brand-400 transition-colors"></i>
+            <div class="flex justify-between items-center select-none w-full">
+                <!-- Left Controls (Common) -->
+                <div class="flex items-center gap-3 sm:gap-5 flex-1">
+                    <button onclick="togglePlay()" class="text-white hover:text-brand-400 transition transform active:scale-90 outline-none group/play p-1">
+                        <i data-lucide="play" id="playIcon" class="w-7 h-7 sm:w-8 sm:h-8 fill-white group-hover/play:fill-brand-400 transition-colors"></i>
                     </button>
                     
                     <div class="flex items-center gap-2">
-                        <button onclick="toggleMute()" class="text-gray-300 hover:text-white transition active:scale-90">
-                            <i data-lucide="volume-2" id="volIcon" class="w-6 h-6"></i>
+                        <button onclick="toggleMute()" class="text-gray-300 hover:text-white transition active:scale-90 p-1">
+                            <i data-lucide="volume-2" id="volIcon" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                         </button>
-                        <div class="hidden sm:flex items-center h-8 gap-2 w-24">
+                        <div class="flex items-center h-8 gap-2 w-16 sm:w-24">
                             <input type="range" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" class="w-full">
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3 pl-4 border-l border-white/10">
+                    <div class="flex items-center gap-3 pl-2 sm:pl-4 border-l border-white/10">
                         <span id="liveBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-widest select-none">
                             <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
                             LIVE
@@ -469,12 +469,62 @@
                     </div>
                 </div>
 
-                <!-- Right Controls (Tools) -->
-                <div class="flex items-center gap-1">
-                    <button onclick="toggleSecondaryMenu()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
-                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
-                    </button>
-                    <div class="relative group/tooltip ml-2">
+                <!-- Right Controls -->
+                <div class="flex items-center gap-1 sm:gap-1">
+                    
+                    <!-- Desktop-Only Tools Row -->
+                    <div class="hidden md:flex items-center gap-1">
+                        <!-- Aspect Ratio -->
+                        <div class="relative group/tooltip">
+                            <button onclick="toggleAspect()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                                <i data-lucide="scan" class="w-5 h-5"></i>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Aspect Ratio</span>
+                        </div>
+
+                        <!-- Screenshot -->
+                        <div class="relative group/tooltip">
+                            <button onclick="takeSnapshot()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Snapshot</span>
+                        </div>
+
+                        <!-- Captions -->
+                        <div class="relative group/tooltip">
+                            <button onclick="toggleCaptions()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition relative disabled:opacity-30 disabled:cursor-not-allowed active:scale-95" id="ccBtn" disabled>
+                                <i data-lucide="subtitles" class="w-5 h-5"></i>
+                                <span id="ccBadge" class="absolute top-2 right-2 w-1.5 h-1.5 bg-brand-500 rounded-full hidden shadow-lg"></span>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Captions</span>
+                        </div>
+
+                        <!-- PiP -->
+                        <div class="relative group/tooltip">
+                            <button onclick="togglePiP()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                                <i data-lucide="picture-in-picture-2" class="w-5 h-5"></i>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">PiP</span>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="relative group/tooltip">
+                            <button onclick="toggleStats()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                            </button>
+                            <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Stats</span>
+                        </div>
+                    </div>
+
+                    <!-- Mobile-Only 3-Dot Menu -->
+                    <div class="md:hidden relative">
+                        <button onclick="toggleMobileMenu()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95" id="mobileMoreBtn">
+                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Fullscreen (Shared) -->
+                    <div class="relative group/tooltip ml-1">
                         <button onclick="toggleFullscreen()" class="text-white hover:bg-white/20 p-2.5 rounded-lg transition active:scale-95">
                             <i data-lucide="maximize" id="fsIcon" class="w-5 h-5"></i>
                         </button>
@@ -485,7 +535,7 @@
         </div>
 
         <!-- Stats Overlay -->
-        <div id="statsOverlay" class="absolute top-4 right-4 left-4 sm:left-auto sm:max-w-xs glass p-5 rounded-2xl text-xs font-mono text-gray-400 hidden z-30 w-auto shadow-2xl animate-fade-in">
+        <div id="statsOverlay" class="absolute top-4 right-4 left-4 sm:left-auto glass p-5 rounded-2xl text-xs font-mono text-gray-400 hidden z-30 w-auto max-w-[calc(100vw-2rem)] sm:w-80 shadow-2xl animate-fade-in overflow-hidden">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
                 <span class="font-bold text-white flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3 text-brand-400"></i> Nerd Stats</span>
                 <button onclick="toggleStats()" class="hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-3 h-3"></i></button>
@@ -545,81 +595,79 @@
 
 <!-- MODAL: Add/Edit Channel -->
 <div id="addChannelModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
-    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl transform transition-all scale-100 animate-slide-in relative flex flex-col max-h-[90vh]">
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
         <!-- Decorative Glow -->
         <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-        <div class="flex justify-between items-center mb-8 relative p-6 sm:p-8 pb-0 shrink-0">
+        <div class="flex justify-between items-center mb-6 shrink-0 relative">
             <h3 class="text-2xl font-bold text-white flex items-center gap-3">
                 <span id="modalTitle">Add Stream</span>
             </h3>
             <button onclick="toggleModal('addChannelModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         
-        <div class="overflow-y-auto no-scrollbar px-6 sm:px-8">
-            <form id="channelForm" onsubmit="handleChannelSubmit(event)" class="space-y-5 relative">
-                <input type="hidden" id="channelId">
-                
-                <!-- Full-width inputs for primary info -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Name</label>
-                    <input type="text" id="inpName" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all placeholder-gray-500" placeholder="e.g., My Favorite Channel">
-                </div>
+<div class="overflow-y-auto no-scrollbar relative flex-1 -mx-2 px-2">
+    <form id="channelForm" onsubmit="handleChannelSubmit(event)" class="space-y-5 relative pb-2">
+        <input type="hidden" id="channelId">
+        
+        <!-- Full-width inputs for primary info -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Name</label>
+            <input type="text" id="inpName" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all placeholder-gray-500" placeholder="e.g., My Favorite Channel">
+        </div>
 
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u8)</label>
+            <div class="relative group">
+                <input type="url" id="inpUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all font-mono text-sm placeholder-gray-500" placeholder="https://...">
+                <i data-lucide="link-2" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+            </div>
+            <p id="urlValidationStatus" class="text-xs mt-2 ml-1 h-4 transition-opacity"></p>
+        </div>
+
+        <!-- Grid for Secondary Info & Perfectly Aligned Preview -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 items-stretch">
+            
+            <!-- Left Column: Inputs -->
+            <div class="sm:col-span-2 flex flex-col gap-5">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u8)</label>
+                    <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Group</label>
+                    <input type="text" id="inpGroup" list="groupSuggestions" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="e.g., News">
+                    <datalist id="groupSuggestions"></datalist>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Logo URL</label>
                     <div class="relative group">
-                        <input type="url" id="inpUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all font-mono text-sm placeholder-gray-500" placeholder="https://...">
-                        <i data-lucide="link-2" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
-                    </div>
-                    <p id="urlValidationStatus" class="text-xs mt-2 ml-1 h-4 transition-opacity"></p>
-                </div>
-
-                <!-- Grid for Secondary Info & Perfectly Aligned Preview -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 items-stretch">
-                    
-                    <!-- Left Column: Inputs -->
-                    <div class="sm:col-span-2 flex flex-col gap-5">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Group</label>
-                            <input type="text" id="inpGroup" list="groupSuggestions" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="e.g., News">
-                            <datalist id="groupSuggestions"></datalist>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Logo URL</label>
-                            <div class="relative group">
-                                <input type="url" id="inpLogo" class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="https://...">
-                                <i data-lucide="image" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Logo Preview -->
-                    <div class="sm:col-span-1 flex flex-col">
-                        <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Preview</label>
-                        <div id="logoPreview" class="image-preview-container w-full h-full min-h-[120px] rounded-2xl border-2 border-dashed border-dark-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-brand-500/50">
-                            <div class="text-gray-600 flex flex-col items-center gap-2 preview-placeholder select-none">
-                                <i data-lucide="image-off" class="w-8 h-8 opacity-50"></i>
-                            </div>
-                        </div>
+                        <input type="url" id="inpLogo" class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="https://...">
+                        <i data-lucide="image" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
                     </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Right Column: Logo Preview -->
+            <div class="sm:col-span-1 flex flex-col">
+                <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Preview</label>
+                <div id="logoPreview" class="image-preview-container w-full h-full min-h-[120px] rounded-2xl border-2 border-dashed border-dark-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-brand-500/50">
+                    <div class="text-gray-600 flex flex-col items-center gap-2 preview-placeholder select-none">
+                        <i data-lucide="image-off" class="w-8 h-8 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-6 flex gap-3 border-t border-dark-border/50">
+            <button type="button" onclick="toggleModal('addChannelModal')" class="flex-1 px-4 py-3 bg-transparent border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">Cancel</button>
+            <button type="submit" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98]">Save Channel</button>
         </div>
         
-        <!-- Action Buttons -->
-        <div class="p-6 sm:p-8 pt-6 shrink-0">
-             <div class="flex gap-3 border-t border-dark-border/50 pt-6">
-                <button type="button" onclick="toggleModal('addChannelModal')" class="flex-1 px-4 py-3 bg-transparent border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">Cancel</button>
-                <button type="submit" form="channelForm" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98]">Save Channel</button>
-            </div>
-            <div id="deleteBtnContainer" class="hidden flex justify-center pt-2 mt-2">
-                 <button type="button" onclick="deleteChannel()" class="text-red-500 hover:text-red-400 text-xs py-2 px-3 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 opacity-80 hover:opacity-100 active:scale-95">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove Channel
-                </button>
-            </div>
+        <div id="deleteBtnContainer" class="hidden flex justify-center pt-2">
+             <button type="button" onclick="deleteChannel()" class="text-red-500 hover:text-red-400 text-xs py-2 px-3 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 opacity-80 hover:opacity-100 active:scale-95">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove Channel
+            </button>
         </div>
-
+    </form>
+</div>
     </div>
 </div>
 
@@ -705,7 +753,11 @@
     let currentAspectIndex = 0;
     let inactivityTimer;
     let animationFrameId = null;
-    let sharedChannelData = null; // For handling shared links
+    let sharedChannelData = null; 
+
+    // Mobile specific interaction state
+    let isTouchInteraction = false;
+    let mobileMenuOpen = false;
 
     const video = document.getElementById('videoPlayer');
 
@@ -714,7 +766,7 @@
         videoContainer: document.getElementById('videoContainer'),
         backgroundCanvas: document.getElementById('backgroundCanvas'),
         controlsOverlay: document.getElementById('controlsOverlay'),
-        secondaryControlsMenu: document.getElementById('secondaryControlsMenu'),
+        mobileMenuOptions: document.getElementById('mobileMenuOptions'),
         channelList: document.getElementById('channelList'),
         searchInput: document.getElementById('searchInput'),
         groupFilterLabel: document.getElementById('selectedGroupLabel'),
@@ -762,11 +814,9 @@
 
     // --- INIT ---
     document.addEventListener('DOMContentLoaded', () => {
-        // Lucide icons might not be loaded yet due to defer, so wait for it
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         } else {
-            // Fallback if the script execution order is unexpected
             setTimeout(() => lucide.createIcons(), 50);
         }
         
@@ -783,8 +833,9 @@
         els.inpLogo.addEventListener('input', updateLogoPreview);
 
         window.addEventListener('resize', () => {
-            if(window.innerWidth >= 768 && isMobileSidebarOpen) { // transitioning from mobile to desktop
-                toggleSidebar(); // Close mobile sidebar
+            if(window.innerWidth >= 768) {
+                if (isMobileSidebarOpen) toggleSidebar(); 
+                if (mobileMenuOpen) closeMobileMenu();
             }
         });
         
@@ -792,6 +843,13 @@
             if (!document.fullscreenElement) {
                 document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
                 lucide.createIcons();
+            }
+        });
+
+        // Click outside handler for mobile menu
+        document.addEventListener('click', (e) => {
+            if (mobileMenuOpen && !e.target.closest('#mobileMenuOptions') && !e.target.closest('#mobileMoreBtn')) {
+                closeMobileMenu();
             }
         });
     });
@@ -824,9 +882,12 @@
         }
     }
     
-    // --- UI INACTIVITY (FIXED FOR MOBILE) ---
+    // --- UI INACTIVITY / MOBILE GLITCH FIX ---
     function setupInactivityControls() {
-        let isUIVisible = false;
+        // Detect touch capability to separate logic
+        els.videoContainer.addEventListener('touchstart', () => {
+            isTouchInteraction = true;
+        }, {passive: true});
 
         function showUI() {
             if (!els.videoContainer.classList.contains('player-active')) return;
@@ -834,50 +895,76 @@
             if (document.fullscreenElement) {
                 els.fullscreenInfo.classList.remove('ui-hidden');
             }
-            isUIVisible = true;
         }
 
         function hideUI() {
-            if (video.paused) return;
+            if (video.paused || mobileMenuOpen) return;
             els.controlsOverlay.classList.add('ui-hidden');
             els.fullscreenInfo.classList.add('ui-hidden');
-            els.secondaryControlsMenu.classList.add('hidden'); // Also hide menu
-            isUIVisible = false;
+            // Also close menu if UI hides
+            if(mobileMenuOpen) closeMobileMenu();
         }
 
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
-            if (isUIVisible) {
-                 inactivityTimer = setTimeout(hideUI, 3500);
-            }
+            showUI();
+            inactivityTimer = setTimeout(hideUI, 3000);
         }
-        
-        // Main toggle on click
+
+        // DESKTOP: Hover logic
+        els.videoContainer.addEventListener('mousemove', (e) => {
+            // If we recently detected touch, ignore mousemove (simulated by tap) to prevent jitter
+            if (isTouchInteraction) return;
+            resetInactivityTimer();
+        });
+
+        els.videoContainer.addEventListener('mouseleave', () => {
+            if (isTouchInteraction) return;
+            hideUI();
+        });
+
+        // MOBILE / TOUCH: Explicit Toggle
+        // We use 'click' on the container, but we check if it was a touch event flag
         els.videoContainer.addEventListener('click', (e) => {
-            if (e.target.closest('.controls-wrapper')) return; // Ignore clicks on controls
-            if (isUIVisible) {
-                hideUI();
-                clearTimeout(inactivityTimer);
-            } else {
-                showUI();
-                resetInactivityTimer();
+            // Don't toggle if clicking actual controls
+            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass')) return;
+
+            if (isTouchInteraction) {
+                if (els.controlsOverlay.classList.contains('ui-hidden')) {
+                    resetInactivityTimer();
+                } else {
+                    hideUI();
+                }
+                // Reset flag after a short delay so mousemove works again if user switches input (rare)
+                setTimeout(() => { isTouchInteraction = false; }, 500);
             }
         });
-        
-        // Show on pause, clear timer
+
         video.addEventListener('pause', () => {
             showUI();
             clearTimeout(inactivityTimer);
         });
-
-        // Reset timer on play
-        video.addEventListener('play', () => {
-             resetInactivityTimer();
-        });
         
-        // Also reset timer if user interacts with controls
-        els.controlsOverlay.addEventListener('mousemove', resetInactivityTimer);
-        els.controlsOverlay.addEventListener('click', resetInactivityTimer);
+        video.addEventListener('play', resetInactivityTimer);
+    }
+
+    // --- MOBILE MENU ---
+    function toggleMobileMenu() {
+        mobileMenuOpen = !mobileMenuOpen;
+        if(mobileMenuOpen) {
+            els.mobileMenuOptions.classList.remove('hidden');
+            els.mobileMenuOptions.classList.add('flex');
+            // Keep UI open while menu is open
+            clearTimeout(inactivityTimer);
+        } else {
+            closeMobileMenu();
+        }
+    }
+
+    function closeMobileMenu() {
+        mobileMenuOpen = false;
+        els.mobileMenuOptions.classList.add('hidden');
+        els.mobileMenuOptions.classList.remove('flex');
     }
 
     // --- KEYBOARD SHORTCUTS ---
@@ -923,7 +1010,6 @@
         statusEl.className = 'text-xs text-gray-500 mt-2 ml-1 h-4 transition-opacity animate-pulse';
 
         try {
-            // Using HEAD request for speed as we only need status
             const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
             if (response.ok) {
                  statusEl.textContent = 'URL is valid and reachable.';
@@ -933,7 +1019,6 @@
                  statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
             }
         } catch (error) {
-            // Catch CORS errors, which are common but don't mean the URL is bad for HLS.js
             if (error instanceof TypeError) {
                 statusEl.textContent = 'URL seems valid (CORS check).';
                 statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
@@ -1019,7 +1104,7 @@
                 els.sidebarToggleStrip.classList.remove('flex');
             }
         }
-        setTimeout(() => lucide.createIcons(), 50); // Delay to allow DOM update
+        setTimeout(() => lucide.createIcons(), 50);
     }
 
     // --- DROPDOWN ---
@@ -1047,9 +1132,6 @@
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-select')) {
             document.getElementById('groupFilterDropdown').classList.remove('open');
-        }
-        if (!e.target.closest('#secondaryControlsMenu') && !e.target.closest('[onclick="toggleSecondaryMenu()"]')) {
-            els.secondaryControlsMenu.classList.add('hidden');
         }
     });
 
@@ -1190,15 +1272,10 @@
     }
 
     // --- PLAYER ENGINE ---
-    
-    /**
-     * MODIFICATION: Added startFragPrefetch to potentially speed up stream starts.
-     * This allows HLS.js to fetch the first video segment while the main playlist is still being parsed.
-     */
     const hlsConfig = {
         abrEwmaDefaultEstimate: 1000000,
         maxBufferLength: 15,
-        maxMaxBufferLength: 30, // Increased slightly for more stability on choppy networks
+        maxMaxBufferLength: 30, 
         startFragPrefetch: true,
     };
 
@@ -1236,7 +1313,6 @@
             stopBackgroundLoop();
         }
 
-        // MODIFICATION: More descriptive initial loading text
         els.loading.style.display = 'flex';
         els.loadingTitle.textContent = `Loading: ${channel.name}`;
         els.loadingStatus.textContent = "Initializing player...";
@@ -1258,7 +1334,6 @@
         if (Hls.isSupported()) {
             hls = new Hls(hlsConfig);
             
-            // MODIFICATION: Add more event listeners for granular feedback
             hls.on(Hls.Events.MANIFEST_LOADING, () => {
                 els.loadingStatus.textContent = "Connecting to stream...";
             });
@@ -1274,11 +1349,6 @@
             hls.loadSource(channel.url);
             hls.attachMedia(video);
             
-            /**
-             * MODIFICATION: Revamped HLS error handling for smarter responses.
-             * Now, it specifically checks for manifest/URL errors to prompt for deletion,
-             * while handling temporary network issues with retries and media errors with recovery attempts.
-             */
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
                     const failedChannelId = currentChannelId;
@@ -1287,7 +1357,6 @@
                     switch (data.details) {
                         case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
                         case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
-                            // This is a strong indicator the URL is invalid or permanently offline.
                             hls.destroy();
                             stopPlayer();
                             showConfirmation(
@@ -1304,7 +1373,6 @@
                             break;
 
                         case Hls.ErrorDetails.NETWORK_ERROR:
-                             // A temporary network issue. Try to recover.
                             els.loading.style.display = 'flex';
                             els.loadingTitle.textContent = 'Reconnecting...';
                             els.loadingStatus.textContent = 'Network connection lost. Attempting to reconnect.';
@@ -1313,7 +1381,6 @@
                             break;
 
                         case Hls.ErrorDetails.MEDIA_ERROR:
-                             // A problem with the video stream itself. Try to recover.
                             els.loading.style.display = 'flex';
                             els.loadingTitle.textContent = 'Recovering Stream...';
                             els.loadingStatus.textContent = 'A media error occurred. Attempting to recover.';
@@ -1322,7 +1389,6 @@
                             break;
 
                         default:
-                            // A generic or unhandled fatal error.
                             hls.destroy();
                             showError(`An unexpected error occurred. The stream for "${failedChannelName}" may be offline or incompatible.`);
                             break;
@@ -1377,7 +1443,6 @@
         } catch (error) {
             showToast("PiP is not available or supported.", "error");
         }
-        els.secondaryControlsMenu.classList.add('hidden');
     }
 
     function togglePlay() {
@@ -1412,10 +1477,6 @@
         document.getElementById('volIcon').setAttribute('data-lucide', icon);
         lucide.createIcons();
     }
-    
-    function toggleSecondaryMenu() {
-        els.secondaryControlsMenu.classList.toggle('hidden');
-    }
 
     function toggleAspect() {
         currentAspectIndex = (currentAspectIndex + 1) % aspectModes.length;
@@ -1430,7 +1491,6 @@
             els.videoContainer.classList.remove('has-blurred-bg');
             stopBackgroundLoop();
         }
-        els.secondaryControlsMenu.classList.add('hidden');
     }
 
     function takeSnapshot() {
@@ -1451,13 +1511,13 @@
         link.href = canvas.toDataURL();
         link.click();
         showToast("Snapshot saved");
-        els.secondaryControlsMenu.classList.add('hidden');
     }
 
     // --- CAPTIONS ---
     function checkCaptions() {
         const hasSubs = video.textTracks.length > 0 || (hls && hls.subtitleTracks.length > 0);
         document.getElementById('ccBtn').disabled = !hasSubs;
+        document.getElementById('mobileCcBtn').disabled = !hasSubs;
     }
 
     function toggleCaptions() {
@@ -1466,6 +1526,11 @@
         const btn = document.getElementById('ccBtn');
 
         badge.classList.toggle('hidden', !isCaptionsOn);
+        btn.classList.toggle('text-brand-400', isCaptionsOn);
+        
+        // Mobile menu sync
+        document.getElementById('mobileCcBtn').classList.toggle('text-brand-400', isCaptionsOn);
+        
         showToast(`Captions ${isCaptionsOn ? 'ON' : 'OFF'}`);
 
         for (let i = 0; i < video.textTracks.length; i++) {
@@ -1475,19 +1540,16 @@
              hls.subtitleDisplay = isCaptionsOn;
              if (isCaptionsOn && hls.subtitleTrack === -1) hls.subtitleTrack = 0;
         }
-        els.secondaryControlsMenu.classList.add('hidden');
     }
 
     // --- STATS & EVENTS ---
     function toggleStats() {
         els.stats.overlay.classList.toggle('hidden');
-        els.secondaryControlsMenu.classList.add('hidden');
     }
 
     function setupPlayerEvents() {
         let bufferTimeout;
         video.addEventListener('waiting', () => {
-            // Only show buffering message if it persists for more than a second
             bufferTimeout = setTimeout(() => {
                 els.loading.style.display = 'flex';
                 els.loadingTitle.textContent = "Buffering...";
@@ -1558,7 +1620,6 @@
         }
     }
 
-    // --- Custom Confirmation Modal ---
     function showConfirmation(title, message, onConfirm) {
         els.confirm.title.textContent = title;
         els.confirm.message.innerHTML = message;
@@ -1651,6 +1712,7 @@
          document.getElementById('liveBadge').classList.add('hidden');
          updateNetworkHealth('idle');
          updateFavButtonState();
+         closeMobileMenu();
     }
 
     function retryStream() {
@@ -1712,7 +1774,6 @@
         const channel = channels.find(c => c.id === currentChannelId);
         if (!channel) return;
 
-        // Create a clean object to share, without the internal ID
         const shareableChannel = {
             name: channel.name,
             url: channel.url,
@@ -1743,7 +1804,7 @@
 
     function handleIncomingShareLink() {
         if (window.location.hash.startsWith('#share=')) {
-            const base64Data = window.location.hash.substring(7); // #share= is 7 chars
+            const base64Data = window.location.hash.substring(7);
             try {
                 const jsonString = atob(base64Data);
                 const channelData = JSON.parse(jsonString);
