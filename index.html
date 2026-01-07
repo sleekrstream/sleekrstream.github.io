@@ -197,12 +197,17 @@
         transform: scale(1);
     }
 
-    /* Glassmorphism */
+    /* Glassmorphism & GPU Stabilization */
     .glass {
         background: rgba(15, 23, 42, 0.7);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.07);
+        /* Hardware acceleration to prevent mobile jitter */
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
     /* Custom Dropdown Styling */
@@ -241,6 +246,7 @@
     /* UI Auto-hide */
     .ui-element {
         transition: opacity 0.3s ease-in-out;
+        will-change: opacity; /* Hints browser to optimize for opacity changes */
     }
     .ui-hidden {
         opacity: 0 !important;
@@ -342,7 +348,7 @@
 </div>
 
 <!-- MAIN CONTENT -->
-<main class="flex-1 flex flex-col relative bg-black h-screen overflow-hidden">
+<main class="flex-1 flex flex-col relative bg-black h-screen overflow-hidden w-full">
     
     <!-- MOBILE-ONLY TOP BAR -->
     <div class="md:hidden flex justify-between items-center p-3 border-b border-dark-border bg-dark-surface/80 glass shrink-0 z-20">
@@ -423,28 +429,28 @@
             </div>
         </div>
 
-        <!-- CONTROLS OVERLAY -->
-        <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 p-3 sm:p-4 z-20 glass rounded-[24px] ui-element ui-hidden">
-            
-            <!-- Mobile Specific Menu (Popup) -->
-            <div id="mobileMenuOptions" class="absolute bottom-full right-0 mb-3 glass rounded-2xl p-2 hidden flex-col gap-1 w-48 shadow-2xl border border-white/10 mobile-menu-enter">
-                <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
-                    <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
-                </button>
-                <button onclick="takeSnapshot(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
-                    <i data-lucide="camera" class="w-4 h-4 text-brand-400"></i> Snapshot
-                </button>
-                <button onclick="toggleCaptions(); closeMobileMenu()" id="mobileCcBtn" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200 disabled:opacity-50">
-                    <i data-lucide="subtitles" class="w-4 h-4 text-brand-400"></i> Captions
-                </button>
-                <button onclick="togglePiP(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
-                    <i data-lucide="picture-in-picture-2" class="w-4 h-4 text-brand-400"></i> PiP Mode
-                </button>
-                <button onclick="toggleStats(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
-                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-400"></i> Stats
-                </button>
-            </div>
+        <!-- NEW LOCATION: Mobile Menu is now here, outside the controls overlay -->
+        <div id="mobileMenuOptions" class="absolute bottom-24 right-4 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
+            <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
+            </button>
+            <button onclick="takeSnapshot(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                <i data-lucide="camera" class="w-4 h-4 text-brand-400"></i> Snapshot
+            </button>
+            <button onclick="toggleCaptions(); closeMobileMenu()" id="mobileCcBtn" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200 disabled:opacity-50">
+                <i data-lucide="subtitles" class="w-4 h-4 text-brand-400"></i> Captions
+            </button>
+            <button onclick="togglePiP(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                <i data-lucide="picture-in-picture-2" class="w-4 h-4 text-brand-400"></i> PiP Mode
+            </button>
+            <button onclick="toggleStats(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-400"></i> Stats
+            </button>
+        </div>
 
+        <!-- CONTROLS OVERLAY -->
+        <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 p-3 sm:p-4 z-20 glass rounded-[24px] ui-element ui-hidden transform-gpu">
+            
             <div class="flex justify-between items-center select-none w-full">
                 <!-- Left Controls (Common) -->
                 <div class="flex items-center gap-3 sm:gap-5 flex-1">
@@ -557,28 +563,29 @@
     </div>
 
     <!-- Info Bar -->
-    <div class="bg-dark-surface/80 glass p-4 border-t border-dark-border flex justify-between items-center shrink-0 z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.3)] info-bar">
-        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+    <!-- Updated: Added w-full max-w-full overflow-hidden to constrain width on mobile -->
+    <div class="bg-dark-surface/80 glass p-4 border-t border-dark-border flex justify-between items-center shrink-0 z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.3)] info-bar w-full max-w-full overflow-hidden">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
             <div id="currentChannelLogo" class="w-12 h-12 bg-gradient-to-br from-dark-light to-dark-border rounded-xl flex items-center justify-center text-gray-500 border border-white/5 overflow-hidden shrink-0 shadow-lg">
                 <i data-lucide="tv" class="w-5 h-5 opacity-80"></i>
             </div>
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-3">
-                    <h2 id="currentChannelName" class="text-lg font-bold text-white leading-tight truncate">Select Channel</h2>
-                    <button id="currentFavBtn" onclick="toggleCurrentFavorite()" class="text-gray-600 hover:text-brand-400 transition hidden active:scale-90">
+                    <h2 id="currentChannelName" class="text-lg font-bold text-white leading-tight truncate block">Select Channel</h2>
+                    <button id="currentFavBtn" onclick="toggleCurrentFavorite()" class="text-gray-600 hover:text-brand-400 transition hidden active:scale-90 shrink-0">
                         <i data-lucide="heart" class="w-4 h-4 fill-current"></i>
                     </button>
                 </div>
-                <div class="flex items-center gap-2 text-sm text-gray-400 mt-1">
-                    <span id="currentChannelGroup" class="text-brand-300 font-medium text-xs px-2 py-0.5 bg-brand-500/10 rounded-md border border-brand-500/20">--</span>
-                    <span id="networkHealth" class="flex items-center gap-1.5 text-xs ml-1">
+                <div class="flex items-center gap-2 text-sm text-gray-400 mt-1 truncate">
+                    <span id="currentChannelGroup" class="text-brand-300 font-medium text-xs px-2 py-0.5 bg-brand-500/10 rounded-md border border-brand-500/20 truncate max-w-[120px]">--</span>
+                    <span id="networkHealth" class="flex items-center gap-1.5 text-xs ml-1 shrink-0">
                         <span class="w-1.5 h-1.5 rounded-full bg-gray-600" id="healthDot"></span>
                         <span id="healthText" class="opacity-70">Idle</span>
                     </span>
                 </div>
             </div>
         </div>
-        <div class="flex gap-2 shrink-0">
+        <div class="flex gap-2 shrink-0 ml-2">
             <button onclick="shareCurrentChannel()" id="shareBtn" class="p-2.5 bg-dark-bg border border-dark-border hover:bg-dark-light hover:border-dark-light rounded-xl text-gray-400 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed active:scale-95" disabled title="Share Channel">
                 <i data-lucide="share-2" class="w-4 h-4"></i>
             </button>
@@ -927,7 +934,7 @@
         // We use 'click' on the container, but we check if it was a touch event flag
         els.videoContainer.addEventListener('click', (e) => {
             // Don't toggle if clicking actual controls
-            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass')) return;
+            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions')) return;
 
             if (isTouchInteraction) {
                 if (els.controlsOverlay.classList.contains('ui-hidden')) {
