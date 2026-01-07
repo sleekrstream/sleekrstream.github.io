@@ -1,1079 +1,1755 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenURI - Files to URI Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2eT0+w4z6G2pB9zK0L1Zp5mD+3Wd+B+r+mB4+2O3Iq6e6Qj+w7G+F+g+w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-	<link rel="icon" href="https://i.postimg.cc/02vKsP1Y/genurilogo.png" sizes="any">
-	<link rel="icon" href="https://i.postimg.cc/02vKsP1Y/genurilogo.png" type="image/svg+xml">
-	<link rel="apple-touch-icon" href="https://i.postimg.cc/02vKsP1Y/genurilogo.png"> <link rel="manifest" href="manifest.webmanifest">
-    <!-- Added JSZip library for file compression -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" xintegrity="sha512-y3o0su6GRj/SgFIpMy/2I2x3i29AYcsocv2+RjV9OpI1i15j6vPqoN8/Fp/2mSgdT/tOOV7N/rA/9V5Wp/P6Ag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <style>
-        /* Custom scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #111827;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #2563eb, #3b82f6);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #3b82f6, #60a5fa);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SleekrStreem</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- HLS.js for m3u8 support -->
+<!-- OPTIMIZATION: Deferred script loading to prevent render-blocking -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.0/dist/hls.min.js" defer></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest" defer></script>
+<!-- Google Fonts -->
+<!-- OPTIMIZATION: Asynchronously load fonts to prevent render-blocking -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4029/4029010.png">
 
-        /* Hide spin buttons for number inputs */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            background-color: #0a0a1a;
-            color: #e0e0e0;
-            background-image: radial-gradient(circle at 10% 20%, #111827, #0a0a1a 80%);
-            overflow-y: auto;
-        }
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background-color: rgba(17, 24, 39, 0.95);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 2.5rem;
-            animation: fadeIn 0.8s ease-out forwards;
-        }
-
-        /* Responsive padding for larger screens */
-        @media (min-width: 640px) {
-             body {
-                padding: 1.5rem;
-            }
-            .container {
-                padding: 2.5rem;
+<script>
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                },
+                colors: {
+                    brand: {
+                        300: '#a5b4fc', // Indigo 300
+                        400: '#818cf8', // Indigo 400
+                        500: '#6366f1', // Indigo 500
+                        600: '#4f46e5', // Indigo 600
+                    },
+                    dark: {
+                        bg: '#020617',      // Slate 950
+                        surface: '#0f172a', // Slate 900
+                        border: '#1e293b',  // Slate 800
+                        light: '#334155',   // Slate 700
+                    }
+                },
+                animation: {
+                    'slide-in': 'slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    'fade-in': 'fadeIn 0.3s ease-out forwards',
+                    'pulse-slow': 'pulseSlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    'heart-beat': 'heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                },
+                keyframes: {
+                    slideIn: {
+                        '0%': { transform: 'translateY(15px)', opacity: '0' },
+                        '100%': { transform: 'translateY(0)', opacity: '1' },
+                    },
+                    fadeIn: {
+                        '0%': { opacity: '0', transform: 'scale(0.98)' },
+                        '100%': { opacity: '1', transform: 'scale(1)' },
+                    },
+                    pulseSlow: {
+                        '50%': { opacity: '.6' },
+                    },
+                    heartBeat: {
+                        '0%': { transform: 'scale(1)' },
+                        '50%': { transform: 'scale(1.3)' },
+                        '100%': { transform: 'scale(1)' },
+                    }
+                }
             }
         }
+    }
+</script>
 
-        .section-header {
-            background-image: linear-gradient(45deg, #3b82f6, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.85rem 2rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            letter-spacing: 0.5px;
-            font-size: 0.9rem;
-        }
-        .button-primary {
-            background-image: linear-gradient(135deg, #1e3a8a, #2563eb);
-            color: white;
-            border: none;
-        }
-        .button-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-        .button-secondary {
-            background-color: #1f2937;
-            color: #d1d5db;
-            border: 1px solid #374151;
-        }
-        .button-secondary:hover {
-            background-color: #374151;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
-        .button-danger {
-            background-color: #dc2626;
-            color: white;
-            border: none;
-        }
-        .button-danger:hover {
-            background-color: #b91c1c;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
-        }
-        .message-box {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            pointer-events: none;
-        }
-        .message-box.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        .input-field {
-            background-color: #1f2937;
-            border: 1px solid #374151;
-            color: #e0e0e0;
-            padding: 0.85rem 1.25rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            width: 100%;
-        }
-        .input-field:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .preview-container {
-            min-height: 250px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 1rem;
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            padding: 1.5rem;
-            flex-grow: 1;
-            position: relative; /* For overlay positioning */
-            transition: border-color 0.3s ease, background-color 0.3s ease;
-        }
-        .preview-container.left {
-            justify-content: flex-start;
-        }
-        .preview-container.right {
-            justify-content: flex-end;
-        }
-        .preview-container.dragover {
-            border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-        .drag-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(17, 24, 39, 0.85);
-            backdrop-filter: blur(4px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 1rem;
-            z-index: 10;
-        }
-        .preview-container.dragover .drag-overlay {
-            opacity: 1;
-        }
-        #previewContent {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .video-player {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-        .video-player video, .video-player iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .video-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 1rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .video-player:hover .video-controls {
-            opacity: 1;
-        }
-        .video-controls button {
-            background: none;
-            border: none;
-            color: white;
-            padding: 0.5rem;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .video-controls button:hover {
-            color: #3b82f6;
-        }
-        .progress-bar {
-            flex-grow: 1;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            cursor: pointer;
-            margin: 0 1rem;
-            position: relative;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: #2563eb;
-            width: 0%;
-            border-radius: 3px;
-        }
-        .custom-select {
-            position: relative;
-            cursor: pointer;
-            width: 100%;
-        }
-        .custom-select-trigger {
-            background-color: #1f2937;
-            border: 1px solid #374151;
-            color: #e0e0e0;
-            padding: 0.85rem 1.25rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.875rem;
-        }
-        .custom-select-trigger:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .custom-options-container {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 0.5rem;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-            z-index: 10;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        }
-        .custom-options-container.open {
-            max-height: 200px;
-            opacity: 1;
-            overflow-y: auto;
-        }
-        .custom-option {
-            padding: 0.85rem 1.25rem;
-            transition: all 0.2s ease;
-        }
-        .custom-option:hover {
-            background-color: #374151;
-        }
-        .custom-option.selected {
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-        }
-        .color-input-group {
-            display: flex;
-            align-items: center;
-            background-color: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 0.5rem;
-            padding: 0.5rem 1.25rem;
-            transition: all 0.2s ease;
-        }
-        .color-input-group:focus-within {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .hex-input-prefix {
-            color: #e0e0e0;
-        }
-        .hex-input {
-            background: none;
-            border: none;
-            color: #e0e0e0;
-            padding-left: 0.5rem;
-            width: 100%;
-            font-size: 0.875rem;
-            outline: none;
-        }
-    </style>
+<style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #334155; 
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #475569; 
+    }
+
+    /* Hidden Scrollbar Utility */
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+/* Transparency Grid for Image Preview */
+    .image-preview-container {
+        background-color: #0f172a; /* Slate 900 */
+        /* Ultra subtle pattern */
+        background-image: 
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%), 
+            linear-gradient(-45deg, rgba(255,255,255,0.03) 25%, transparent 25%), 
+            linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.03) 75%), 
+            linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.03) 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* Loader */
+    .loader {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        position: relative;
+        animation: spin 1.2s linear infinite;
+        border: 4px solid transparent;
+        border-top-color: #6366f1; 
+        border-left-color: #818cf8; 
+    }
+    .loader::after {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        border-radius: 50%;
+        border: 4px solid transparent;
+        border-bottom-color: #a5b4fc; 
+        animation: spin 0.7s linear infinite reverse;
+    }
+    .mini-loader {
+        width: 24px;
+        height: 24px;
+        border: 2px solid transparent;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Volume Slider */
+    input[type=range] {
+        -webkit-appearance: none; 
+        background: transparent;
+        height: 24px;
+        display: flex;
+        align-items: center;
+    }
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 14px;
+        width: 14px;
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        margin-top: -5px; 
+        position: relative;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    input[type=range]:active::-webkit-slider-thumb {
+        transform: scale(1.2);
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 4px;
+        cursor: pointer;
+        background: rgba(255,255,255,0.15);
+        border-radius: 2px;
+    }
+    
+    /* Channel Item Styling */
+    .channel-item {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .channel-item:hover {
+        transform: translateX(4px);
+    }
+    .channel-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.05));
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transform: translateX(4px);
+    }
+    /* Indicator for active channel */
+    .channel-item.active .active-indicator {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* Glassmorphism */
+    .glass {
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    /* Custom Dropdown Styling */
+    .custom-select-options {
+        display: none;
+    }
+    .custom-select.open .custom-select-options {
+        display: block;
+    }
+
+    /* Fullscreen Helper */
+    #videoContainer:fullscreen {
+        background: black;
+    }
+    #videoContainer:fullscreen #fullscreenInfo {
+        display: flex;
+        animation: fadeIn 0.5s ease-out;
+    }
+    #videoContainer:fullscreen + .info-bar {
+        display: none;
+    }
+    
+    /* Smooth width/height transition for sidebar */
+    .sidebar-transition {
+        transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                    height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    body {
+        background-image: radial-gradient(circle at top left, rgba(79, 70, 229, 0.15), transparent 30%),
+                          radial-gradient(circle at bottom right, rgba(192, 132, 252, 0.1), transparent 40%);
+    }
+
+    /* UI Auto-hide */
+    .ui-element {
+        transition: opacity 0.4s ease-in-out;
+    }
+    .ui-hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Prevent drag on images */
+    img {
+        -webkit-user-drag: none;
+        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }
+
+    /* Blurred Background Styling */
+    #videoContainer.has-blurred-bg #backgroundCanvas {
+        opacity: 1;
+        filter: blur(40px) brightness(0.4);
+        transform: scale(1.1); /* To avoid harsh edges from the video appearing */
+    }
+
+</style>
 </head>
-<body>
+<body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-col md:flex-row antialiased selection:bg-brand-500 selection:text-white">
 
-    <div class="container">
-        <!-- New Logo Header -->
-        <div class="flex items-center justify-center gap-3 sm:gap-4">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-center section-header tracking-wider">GenURI</h1>
+<!-- SIDEBAR -->
+<aside class="bg-dark-surface/80 backdrop-blur-xl border-r border-dark-border flex flex-col h-[40vh] md:h-full sidebar-transition z-30 relative group/sidebar overflow-hidden" id="sidebar" style="width: 340px;">
+    
+    <!-- Header -->
+    <div class="p-5 border-b border-dark-border flex justify-between items-center bg-dark-surface/50 shrink-0">
+        <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+            <div class="bg-gradient-to-br from-brand-600 to-brand-400 text-white p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+                <i data-lucide="zap" class="w-5 h-5"></i>
+            </div>
+            <h1 class="font-bold text-xl tracking-tight text-white sidebar-text">SleekrStreem</h1>
+        </div>
+        <div class="flex items-center gap-1 sidebar-text">
+            <button onclick="toggleModal('addChannelModal')" class="p-2 hover:bg-white/5 rounded-xl transition-all active:scale-95 text-gray-400 hover:text-white group relative" title="Add Stream">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+            <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl md:hidden active:scale-95 transition-all">
+                <i data-lucide="chevron-up" class="w-5 h-5"></i>
+            </button>
+            <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl hidden md:block active:scale-95 transition-all">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="p-4 border-b border-dark-border space-y-3 shrink-0 sidebar-content bg-dark-surface/30">
+        <div class="relative group focus-within:ring-2 focus-within:ring-brand-500/50 rounded-xl transition-all">
+            <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+            <input type="text" id="searchInput" placeholder="Find channels..." 
+                class="w-full bg-dark-bg border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-all placeholder-gray-500 text-gray-200 shadow-sm">
         </div>
         
-        <p class="text-sm text-gray-400 text-center -mt-8">
-            Embed local files, media, or external links directly into your code.
-        </p>
-
-        <!-- Main Content Area -->
-        <div class="flex flex-col gap-10">
-            <!-- File & Link Input Section -->
-            <div class="space-y-4">
-                <h2 class="text-xl font-bold section-header">File Source</h2>
-                <div class="flex flex-col sm:flex-row items-center gap-4">
-                    <input type="text" id="urlInput" placeholder="Paste a link here" class="input-field w-full sm:w-1/2">
-                    <label for="fileInput" class="button button-primary cursor-pointer w-full sm:w-1/2">
-                        <i class="fas fa-upload mr-2"></i>
-                        Upload File
-                    </label>
-                    <!-- Updated file input to accept more types -->
-                    <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.zip,.rar,.pdf,.doc,.docx,.txt,.html,.css,.js" class="hidden">
-                </div>
-                 <!-- Progress Bar Section -->
-                <div id="progressSection" class="hidden space-y-2 pt-4">
-                    <div class="flex justify-between">
-                        <span id="progressLabel" class="text-sm font-medium text-gray-300">Processing...</span>
-                        <span id="progressText" class="text-sm font-medium text-gray-300">0%</span>
-                    </div>
-                    <div class="w-full bg-gray-700 rounded-full h-2.5">
-                        <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%;"></div>
-                    </div>
-                </div>
+        <div class="flex gap-2">
+            <div class="relative custom-select flex-1" id="groupFilterDropdown">
+                <button onclick="toggleDropdown()" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm flex justify-between items-center hover:border-dark-light hover:bg-white/5 transition-all text-gray-300 active:scale-[0.98]">
+                    <span id="selectedGroupLabel" class="truncate">All Groups</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                </button>
+                <div class="custom-select-options absolute top-full left-0 right-0 mt-2 bg-dark-surface border border-dark-border rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto no-scrollbar animate-slide-in p-1.5" id="groupOptionsList"></div>
             </div>
 
-            <!-- Supported Files Information -->
-            <div class="space-y-2 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                <h3 class="text-lg font-bold section-header">Supported Files</h3>
-                <p class="text-xs text-gray-400">
-                    You can generate a Data URI for various file types. Files over 50MB will be automatically compressed.
-                </p>
-                <ul class="text-sm text-gray-300 list-disc list-inside grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-                    <li>Images (PNG, JPG)</li>
-                    <li>Videos (MP4, WEBM)</li>
-                    <li>Audio (MP3, WAV)</li>
-                    <li>Documents (PDF, DOCX)</li>
-                    <li>Archives (ZIP, RAR)</li>
-                    <li>Code (HTML, CSS, JS)</li>
-                </ul>
+             <button onclick="filterFavorites()" id="favFilterBtn" class="px-3 py-2 text-sm font-medium border border-dark-border rounded-xl hover:bg-white/5 text-gray-400 transition-all flex items-center justify-center gap-2 active:scale-95">
+                <i data-lucide="heart" class="w-4 h-4"></i>
+             </button>
+        </div>
+    </div>
+
+    <!-- Channel List -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-2 sidebar-content scroll-smooth bg-dark-bg/30" id="channelList">
+        <!-- Channels injected here -->
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-dark-border text-xs text-gray-500 shrink-0 sidebar-content bg-dark-surface/50">
+        <div class="flex justify-between items-center">
+            <button onclick="importExampleChannels()" class="hover:text-brand-400 transition-colors flex items-center gap-1.5 hover:underline decoration-brand-400/50">
+                <i data-lucide="download-cloud" class="w-3 h-3"></i> Load Demo
+            </button>
+            <span id="channelCount" class="font-mono text-gray-600">0 loaded</span>
+        </div>
+    </div>
+</aside>
+
+<!-- Sidebar Expand Strip (Desktop) -->
+<div id="sidebarToggleStrip" class="hidden flex-col items-center justify-start py-6 w-14 border-r border-dark-border bg-dark-surface/80 z-20 gap-4 transition-all">
+    <button onclick="toggleSidebar()" class="p-3 hover:bg-brand-500/10 hover:text-brand-400 rounded-xl transition-all active:scale-95" title="Expand Sidebar">
+        <i data-lucide="panel-left-open" class="w-5 h-5"></i>
+    </button>
+</div>
+
+<!-- MAIN CONTENT -->
+<main class="flex-1 flex flex-col relative bg-black h-[60vh] md:h-full overflow-hidden">
+    
+    <!-- Video Container -->
+    <div class="relative flex-1 bg-black flex items-center justify-center group overflow-hidden" id="videoContainer">
+        
+        <!-- NEW: Background Canvas -->
+        <canvas id="backgroundCanvas" class="absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-500 opacity-0"></canvas>
+        
+        <!-- Video Element -->
+        <video id="videoPlayer" class="relative z-10 w-full h-full object-contain transition-all duration-300" playsinline crossorigin="anonymous"></video>
+
+        <!-- Fullscreen Info -->
+        <div id="fullscreenInfo" class="absolute top-6 left-6 z-20 p-3 hidden items-center gap-4 glass rounded-[24px] ui-element">
+            <div id="fullscreenChannelLogo" class="w-12 h-12 bg-dark-border rounded-lg flex items-center justify-center border border-white/10 overflow-hidden shrink-0">
+                <i data-lucide="tv" class="w-6 h-6 opacity-80"></i>
             </div>
-
-            <!-- Preview & Code -->
-            <div class="space-y-8">
-                <!-- Live Preview Section -->
-                <div class="space-y-2">
-                    <h2 class="text-xl font-bold section-header">Live Preview</h2>
-                    <div id="previewContainer" class="preview-container">
-                        <div id="previewContent">
-                           <span class="text-gray-500 text-sm">Preview will appear here, or drop a file to start.</span>
-                        </div>
-                        <div class="drag-overlay">
-                            <i class="fas fa-file-import fa-beat-fade text-6xl text-blue-400 mb-4" style="--fa-beat-fade-opacity: 0.67; --fa-beat-fade-scale: 1.075;"></i>
-                            <span class="text-white font-semibold text-lg">Drop your file to begin</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Code & Controls Section -->
-                <div class="space-y-6">
-                    <h2 class="text-xl font-bold section-header">Generated Code</h2>
-                    
-                    <div class="space-y-4">
-                        <input type="text" id="altNameInput" placeholder="Alt text / File Name" class="input-field">
-                        <div class="custom-select" data-select-id="resizeMethod">
-                            <div class="custom-select-trigger" tabindex="0">
-                                <span>Width and Height (px)</span>
-                                <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
-                            </div>
-                            <div class="custom-options-container">
-                                <div class="custom-option" data-value="dimensions">Width and Height (px)</div>
-                                <div class="custom-option" data-value="percentage">Percentage (%)</div>
-                            </div>
-                        </div>
-                        <div id="dimensionsInputs" class="flex flex-col sm:flex-row gap-4">
-                            <input type="number" id="widthInput" placeholder="Width" class="input-field w-full sm:w-1/2">
-                            <input type="number" id="heightInput" placeholder="Height" class="input-field w-full sm:w-1/2">
-                        </div>
-                        <div id="percentageInput" class="hidden">
-                            <input type="number" id="percentageValue" placeholder="Percentage (1-100)" min="1" max="100" class="input-field">
-                        </div>
-
-                        <!-- Updated Border Options with Border Radius -->
-                        <div class="flex flex-col sm:flex-row gap-4 items-center">
-                            <input type="number" id="borderThickness" placeholder="Thickness (px)" class="input-field w-full sm:w-1/4">
-                            <input type="number" id="borderRadius" placeholder="Radius (px)" class="input-field w-full sm:w-1/4">
-                            <div class="custom-select w-full sm:w-1/4" data-select-id="borderStyle">
-                                <div class="custom-select-trigger" tabindex="0">
-                                    <span>No Border</span>
-                                    <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
-                                </div>
-                                <div class="custom-options-container">
-                                    <div class="custom-option" data-value="">No Border</div>
-                                    <div class="custom-option" data-value="solid">Solid</div>
-                                    <div class="custom-option" data-value="dashed">Dashed</div>
-                                    <div class="custom-option" data-value="dotted">Dotted</div>
-                                    <div class="custom-option" data-value="double">Double</div>
-                                    <div class="custom-option" data-value="groove">Groove</div>
-                                </div>
-                            </div>
-                            <!-- New Color Input with Integrated Preview -->
-                            <div class="w-full sm:w-1/4 color-input-group">
-                                <span class="hex-input-prefix">#</span>
-                                <input type="text" id="borderColorHex" value="000000" class="hex-input" maxlength="6">
-                            </div>
-                        </div>
-
-                        <!-- Updated Alignment Option -->
-                        <div class="custom-select" data-select-id="alignment">
-                            <div class="custom-select-trigger" tabindex="0">
-                                <span>No Alignment</span>
-                                <i class="fas fa-chevron-down text-gray-400 text-sm ml-2"></i>
-                            </div>
-                            <div class="custom-options-container">
-                                <div class="custom-option" data-value="none">No Alignment</div>
-                                <div class="custom-option" data-value="center">Center</div>
-                                <div class="custom-option" data-value="left">Left</div>
-                                <div class="custom-option" data-value="right">Right</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <textarea id="uriOutput" class="w-full h-32 input-field text-xs sm:text-sm" placeholder="Your Data URI will be generated here..." readonly></textarea>
-                    
-                    <textarea id="htmlOutput" class="w-full h-32 input-field text-xs sm:text-sm" placeholder="Your HTML code will be generated here..." readonly></textarea>
-                </div>
+            <div>
+                <h2 id="fullscreenChannelName" class="text-lg font-bold text-white">Select Channel</h2>
             </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="copyUriButton" class="button button-secondary w-full">
-                    <i class="fas fa-copy mr-2"></i>
-                    Copy URI
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-dark-surface/80 flex flex-col items-center justify-center z-10 hidden backdrop-blur-md animate-fade-in">
+            <div class="loader mb-6"></div>
+            <h3 class="text-lg font-medium text-white mb-2 tracking-wide" id="loadingTitle">Connecting to Stream</h3>
+            <p id="loadingStatus" class="text-sm text-brand-400 opacity-80 animate-pulse-slow">Please wait a moment...</p>
+        </div>
+
+        <!-- Error Overlay -->
+        <div id="errorOverlay" class="absolute inset-0 bg-dark-surface/95 flex flex-col items-center justify-center z-10 hidden p-8 text-center animate-fade-in">
+            <div class="bg-red-500/10 p-5 rounded-full mb-6 ring-1 ring-red-500/20">
+                <i data-lucide="wifi-off" class="w-10 h-10 text-red-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">Connection Failed</h3>
+            <p id="errorMessage" class="text-gray-400 mb-8 max-w-md leading-relaxed text-sm">Could not connect to the stream. The link may be invalid, the stream might be offline, or unavailable in your region.</p>
+            <div class="flex gap-4">
+                <button onclick="stopPlayer()" class="px-6 py-2.5 bg-dark-surface border border-dark-border rounded-xl text-white hover:bg-dark-light transition text-sm font-medium active:scale-95">
+                    Close
                 </button>
-                <button id="copyHtmlButton" class="button button-secondary w-full">
-                    <i class="fas fa-code mr-2"></i>
-                    Copy HTML
-                </button>
-                <button id="downloadHtmlButton" class="button button-primary w-full">
-                    <i class="fas fa-download mr-2"></i>
-                    Download HTML
-                </button>
-                <button id="clearButton" class="button button-danger w-full">
-                    <i class="fas fa-eraser mr-2"></i>
-                    Clear
+                <button onclick="retryStream()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition text-sm font-bold flex items-center gap-2 shadow-lg shadow-brand-500/20 active:scale-95">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Retry
                 </button>
             </div>
         </div>
 
-        <!-- Custom Message Box -->
-        <div id="messageBox" class="message-box"></div>
-    </div>
-
-    <!-- Custom Context Menu for File Details -->
-    <div id="fileContextMenu" class="hidden fixed bg-gray-800 border border-gray-600 rounded-md shadow-lg p-3 text-sm text-gray-200 z-50">
-        <div class="font-bold mb-2 pb-2 border-b border-gray-600" id="contextFileName">File Name</div>
-        <ul class="space-y-1">
-            <li class="flex justify-between"><span class="font-semibold text-gray-400 mr-4">Type:</span> <span id="contextFileType"></span></li>
-            <li class="flex justify-between"><span class="font-semibold text-gray-400 mr-4">Size:</span> <span id="contextFileSize"></span></li>
-            <li class="flex justify-between hidden" id="contextDimensionsItem"><span class="font-semibold text-gray-400 mr-4">Dimensions:</span> <span id="contextFileDimensions"></span></li>
-        </ul>
-    </div>
-
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const urlInput = document.getElementById('urlInput');
-        const altNameInput = document.getElementById('altNameInput');
-        const uriOutput = document.getElementById('uriOutput');
-        const htmlOutput = document.getElementById('htmlOutput');
-        const dimensionsInputs = document.getElementById('dimensionsInputs');
-        const percentageInput = document.getElementById('percentageInput');
-        const widthInput = document.getElementById('widthInput');
-        const heightInput = document.getElementById('heightInput');
-        const percentageValueInput = document.getElementById('percentageValue');
-        const borderThicknessInput = document.getElementById('borderThickness');
-        const borderRadiusInput = document.getElementById('borderRadius');
-        const borderColorHexInput = document.getElementById('borderColorHex');
-        const colorInputGroup = document.querySelector('.color-input-group');
-        const hexInputPrefix = document.querySelector('.hex-input-prefix');
-        const copyUriButton = document.getElementById('copyUriButton');
-        const copyHtmlButton = document.getElementById('copyHtmlButton');
-        const downloadHtmlButton = document.getElementById('downloadHtmlButton');
-        const clearButton = document.getElementById('clearButton');
-        const messageBox = document.getElementById('messageBox');
-        const previewContainer = document.getElementById('previewContainer');
-        const previewContent = document.getElementById('previewContent');
-        const progressSection = document.getElementById('progressSection');
-        const progressLabel = document.getElementById('progressLabel');
-        const progressText = document.getElementById('progressText');
-        const progressBar = document.getElementById('progressBar');
-        const fileContextMenu = document.getElementById('fileContextMenu');
-        
-        let activeSource = ''; // 'file' or 'url'
-        let myWorker;
-        let animationFrameId;
-        let currentFile = null;
-
-        // Utility function to show a custom message box
-        function showMessage(text, isError = false) {
-            messageBox.textContent = text;
-            messageBox.style.backgroundColor = isError ? '#dc2626' : '#2563eb';
-            messageBox.classList.add('show');
-            setTimeout(() => {
-                messageBox.classList.remove('show');
-            }, 3000);
-        }
-
-        function formatBytes(bytes, decimals = 2) {
-            if (!+bytes) return '0 Bytes'
-
-            const k = 1024
-            const dm = decimals < 0 ? 0 : decimals
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-
-            const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
-        }
-
-        // Function to determine contrast color based on luminance
-        function getContrastColor(hexcolor) {
-            if (!hexcolor || hexcolor.length < 6) {
-                return '#000000';
-            }
-            const r = parseInt(hexcolor.substr(0, 2), 16);
-            const g = parseInt(hexcolor.substr(2, 2), 16);
-            const b = parseInt(hexcolor.substr(4, 2), 16);
-            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-            return (yiq >= 128) ? '#000000' : '#ffffff';
-        }
-
-        // Custom dropdown logic
-        document.querySelectorAll('.custom-select-trigger').forEach(trigger => {
-            trigger.addEventListener('click', () => {
-                const optionsContainer = trigger.nextElementSibling;
-                document.querySelectorAll('.custom-options-container.open').forEach(openContainer => {
-                    if (openContainer !== optionsContainer) openContainer.classList.remove('open');
-                });
-                optionsContainer.classList.toggle('open');
-            });
-            trigger.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); } });
-        });
-
-        document.querySelectorAll('.custom-option').forEach(option => {
-            option.addEventListener('click', () => {
-                const parent = option.closest('.custom-select');
-                parent.querySelector('.custom-select-trigger span').textContent = option.textContent;
-                parent.querySelector('.custom-options-container').classList.remove('open');
-                parent.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-
-                const selectId = parent.dataset.selectId;
-                if (selectId === 'resizeMethod') {
-                    if (option.dataset.value === 'dimensions') {
-                        dimensionsInputs.classList.remove('hidden');
-                        percentageInput.classList.add('hidden');
-                    } else {
-                        dimensionsInputs.classList.add('hidden');
-                        percentageInput.classList.remove('hidden');
-                    }
-                }
-                updateHtmlOutput();
-                if (selectId === 'alignment') {
-                    const source = activeSource === 'file' ? uriOutput.value : urlInput.value;
-                    if (source) createPreview(source, activeSource === 'file' ? getMimeFromDataURI(uriOutput.value) : 'auto');
-                }
-            });
-        });
-        window.addEventListener('click', e => { 
-            if (!e.target.closest('.custom-select')) {
-                document.querySelectorAll('.custom-options-container').forEach(c => c.classList.remove('open'));
-            }
-            fileContextMenu.classList.add('hidden');
-        });
-        
-        function getMimeFromDataURI(dataURI) {
-            if (!dataURI) return 'application/octet-stream';
-            return dataURI.substring(dataURI.indexOf(':') + 1, dataURI.indexOf(';'));
-        }
-
-        function getYouTubeId(url) {
-            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-            return url.match(regex)?.[1] || null;
-        }
-
-        function createPreview(source, fileType) {
-            previewContent.innerHTML = '';
+        <!-- Start Screen -->
+        <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center z-0 p-4">
+             <div class="absolute inset-0 bg-gradient-to-br from-dark-bg to-[#050505]"></div>
+            <div class="relative mb-10 group cursor-pointer" onclick="toggleModal('addChannelModal')">
+                <div class="absolute -inset-2 bg-brand-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-700 rounded-full animate-pulse-slow"></div>
+                <div class="relative w-28 h-28 bg-dark-surface rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/5 group-hover:scale-105 group-active:scale-95 transition-transform duration-500 ease-out">
+                    <i data-lucide="zap" class="w-12 h-12 text-brand-400"></i>
+                </div>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight text-center">SleekrStreem</h2>
+            <p class="text-gray-400 max-w-sm text-center leading-relaxed">A modern IPTV experience.<br>Select a channel from the list or add a new stream to begin.</p>
             
-            const alignmentValue = document.querySelector('[data-select-id="alignment"] .custom-option.selected')?.dataset.value;
-            previewContainer.className = 'preview-container'; // Reset classes
-            if (alignmentValue === 'left') previewContainer.classList.add('left');
-            else if (alignmentValue === 'right') previewContainer.classList.add('right');
+            <div class="mt-8 gap-4 text-xs text-gray-500 font-mono hidden sm:flex">
+                <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">SPACE</kbd> Play/Pause</span>
+                <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">F</kbd> Fullscreen</span>
+            </div>
+        </div>
 
-            const youtubeId = getYouTubeId(source);
-            if (youtubeId) {
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${youtubeId}`;
-                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-                iframe.setAttribute('allowfullscreen', '');
-                iframe.className = "rounded-lg w-full h-full";
-                previewContent.appendChild(iframe);
-                return;
-            }
-
-            if (fileType.startsWith('image/')) {
-                const img = document.createElement('img');
-                img.src = source;
-                img.alt = "Live Preview";
-                img.className = "max-w-full h-auto rounded-lg";
-                previewContent.appendChild(img);
-            } else if (fileType.startsWith('video/')) {
-                 const videoPlayerDiv = document.createElement('div');
-                videoPlayerDiv.className = "video-player";
-                const mediaElement = document.createElement('video');
-                mediaElement.src = source;
-                mediaElement.className = "rounded-lg w-full h-full";
-                videoPlayerDiv.appendChild(mediaElement);
-                // Simplified controls for preview
-                mediaElement.controls = true;
-                previewContent.appendChild(videoPlayerDiv);
-            } else if (fileType.startsWith('audio/')) {
-                 previewContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
-                        <i class="fas fa-music text-6xl text-blue-500 mb-4"></i>
-                        <audio controls class="w-full" src="${source}"></audio>
-                    </div>`;
-            } else if (fileType.includes('zip') || fileType.includes('archive')) {
-                 previewContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
-                        <i class="fas fa-file-archive text-6xl text-yellow-500 mb-4"></i>
-                        <span class="text-white font-semibold">ZIP Archive</span>
-                    </div>`;
-            } else if (fileType.includes('pdf')) {
-                previewContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
-                        <i class="fas fa-file-pdf text-6xl text-red-500 mb-4"></i>
-                        <span class="text-white font-semibold">PDF Document</span>
-                    </div>`;
-            } else {
-                previewContent.innerHTML = `
-                    <div class="flex flex-col items-center justify-center p-6 bg-gray-800 rounded-lg w-full">
-                        <i class="fas fa-file-alt text-6xl text-gray-400 mb-4"></i>
-                        <span class="text-white font-semibold">File</span>
-                    </div>`;
-            }
-        }
-
-        function updateHtmlOutput() {
-            let width = '';
-            let height = '';
-            let style = '';
+        <!-- Controls Overlay -->
+        <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 p-3 sm:p-4 z-20 glass rounded-[24px] ui-element ui-hidden">
             
-            const resizeMethod = document.querySelector('[data-select-id="resizeMethod"] .custom-option.selected')?.dataset.value || 'dimensions';
-            const borderStyle = document.querySelector('[data-select-id="borderStyle"] .custom-option.selected')?.dataset.value || '';
-            const alignment = document.querySelector('[data-select-id="alignment"] .custom-option.selected')?.dataset.value || 'none';
-            
-            if (resizeMethod === 'dimensions') {
-                if (widthInput.value) width = `width="${widthInput.value}"`;
-                if (heightInput.value) height = `height="${heightInput.value}"`;
-            } else {
-                if (percentageValueInput.value) width = `width="${percentageValueInput.value}%"`;
-            }
-
-            const thickness = borderThicknessInput.value;
-            const radius = borderRadiusInput.value;
-            const color = '#' + borderColorHexInput.value;
-            if (thickness && borderStyle) style += `border: ${thickness}px ${borderStyle} ${color};`;
-            if (radius) style += `border-radius: ${radius}px;`;
-
-            if (alignment !== 'none') {
-                style += `display: block;`;
-                if (alignment === 'center') style += `margin-left: auto; margin-right: auto;`;
-                else if (alignment === 'left') style += `margin-right: auto;`;
-                else if (alignment === 'right') style += `margin-left: auto;`;
-            }
-
-            if (style) style = `style="${style}"`;
-           
-            const altText = altNameInput.value ? altNameInput.value : 'media';
-            
-            let htmlString = '';
-            let source = activeSource === 'file' ? uriOutput.value : urlInput.value;
-
-            const youtubeId = getYouTubeId(urlInput.value);
-            if (youtubeId) {
-                htmlString = `<iframe src="https://www.youtube.com/embed/${youtubeId}" ${width} ${height} frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen ${style}></iframe>`;
-            } else if (source) {
-                const mimeType = activeSource === 'file' ? getMimeFromDataURI(source) : (source.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? 'image/jpeg' : 'video/mp4');
-
-                if (mimeType.startsWith('image/')) {
-                    htmlString = `<img src="${source}" alt="${altText}" ${width} ${height} ${style}>`;
-                } else if (mimeType.startsWith('video/')) {
-                    htmlString = `<video controls ${width} ${height} ${style}><source src="${source}" type="${mimeType}"></video>`;
-                } else if (mimeType.startsWith('audio/')) {
-                    htmlString = `<audio controls ${width} ${height} ${style}><source src="${source}" type="${mimeType}"></audio>`;
-                } else {
-                    // Fallback for other file types like zip, pdf, etc. is a download link.
-                    htmlString = `<a href="${source}" download="${altText}" ${style}>Download ${altText}</a>`;
-                }
-            }
-            htmlOutput.value = htmlString;
-        }
-
-        const workerScript = `
-            self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-
-            let timeoutId = null;
-
-            self.onmessage = function(e) {
-                // Clear any previous timeout
-                if (timeoutId) clearTimeout(timeoutId);
-
-                const file = e.data;
-                const maxSizeBytes = 50 * 1024 * 1024;
-                const COMPRESSION_TIMEOUT = 30000; // 30 seconds
-
-                timeoutId = setTimeout(() => {
-                    self.postMessage({ type: 'error', message: 'Compression timed out. The file may be too large.' });
-                }, COMPRESSION_TIMEOUT);
-
-                const handleFileData = (data, type) => {
-                    const reader = new FileReader();
-                    reader.onprogress = (event) => {
-                        if (event.lengthComputable) {
-                            const percentComplete = Math.round((event.loaded / event.total) * 100);
-                            self.postMessage({ type: 'progress', stage: 'Reading', percent: percentComplete });
-                        }
-                    };
-                    reader.onload = (e) => {
-                        clearTimeout(timeoutId);
-                        self.postMessage({ type: 'result', dataURI: e.target.result, mimeType: type });
-                    };
-                    reader.onerror = () => {
-                        clearTimeout(timeoutId);
-                        self.postMessage({ type: 'error', message: 'Error reading file.' });
-                    };
-                    reader.readAsDataURL(data);
-                };
-
-                if (file.size > maxSizeBytes) {
-                    try {
-                        const zip = new self.JSZip();
-                        zip.file(file.name, file);
-                        zip.generateAsync(
-                            { type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } },
-                            (metadata) => {
-                                self.postMessage({ type: 'progress', stage: 'Compressing', percent: Math.round(metadata.percent) });
-                            }
-                        ).then((content) => {
-                            handleFileData(content, 'application/zip');
-                        }).catch((err) => {
-                            clearTimeout(timeoutId);
-                            self.postMessage({ type: 'error', message: 'Compression failed: ' + err.message });
-                        });
-                    } catch (err) {
-                        clearTimeout(timeoutId);
-                        self.postMessage({ type: 'error', message: 'Compression failed unexpectedly: ' + err.message });
-                    }
-                } else {
-                    handleFileData(file, file.type);
-                }
-            };
-        `;
-        const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(workerBlob);
-
-        function handleFile(file) {
-            if (!file) return;
-            
-            currentFile = file; // Store the file for context menu
-            altNameInput.value = file.name; // Update alt text field
-
-            const EXTREME_FILE_SIZE = 500 * 1024 * 1024; // 500MB
-            if (file.size > EXTREME_FILE_SIZE) {
-                showMessage('File is very large and may crash the browser. Proceed with caution.', true);
-            }
-
-            progressSection.classList.remove('hidden');
-            let currentProgress = 0;
-            
-            const updateProgressBar = (targetPercent) => {
-                cancelAnimationFrame(animationFrameId);
-                
-                const animate = () => {
-                    const easingFactor = 0.08;
-                    const distance = targetPercent - currentProgress;
-
-                    if (Math.abs(distance) < 0.1) {
-                        currentProgress = targetPercent;
-                    } else {
-                        currentProgress += distance * easingFactor;
-                    }
+            <div class="flex justify-between items-center select-none">
+                <!-- Left Controls -->
+                <div class="flex items-center gap-3 sm:gap-5">
+                    <button onclick="togglePlay()" class="text-white hover:text-brand-400 transition transform active:scale-90 outline-none group/play">
+                        <i data-lucide="play" id="playIcon" class="w-8 h-8 fill-white group-hover/play:fill-brand-400 transition-colors"></i>
+                    </button>
                     
-                    progressBar.style.width = currentProgress + '%';
-                    progressText.textContent = Math.floor(currentProgress) + '%';
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleMute()" class="text-gray-300 hover:text-white transition active:scale-90">
+                            <i data-lucide="volume-2" id="volIcon" class="w-6 h-6"></i>
+                        </button>
+                        <div class="flex items-center h-8 gap-2 w-24">
+                            <input type="range" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" class="w-full">
+                        </div>
+                    </div>
 
-                    if (currentProgress < targetPercent) {
-                        animationFrameId = requestAnimationFrame(animate);
-                    }
-                };
-                animationFrameId = requestAnimationFrame(animate);
-            }
-            
-            updateProgressBar(0);
-            progressBar.style.width = '0%';
-            progressText.textContent = '0%';
-            progressLabel.textContent = 'Preparing...';
-            uriOutput.value = '';
-            htmlOutput.value = '';
-            previewContent.innerHTML = '<span class="text-gray-500 text-sm">Processing file...</span>';
+                    <div class="flex items-center gap-3 pl-4 border-l border-white/10">
+                        <!-- REDESIGNED LIVE BADGE -->
+                        <span id="liveBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-widest select-none">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                            LIVE
+                        </span>
+                    </div>
+                </div>
 
-            activeSource = 'file';
-            urlInput.value = '';
-            
-            if (myWorker) myWorker.terminate();
-            myWorker = new Worker(workerUrl);
+                <!-- Right Controls (Tools) -->
+                <div class="flex items-center gap-1">
+                    
+                    <!-- Aspect Ratio -->
+                    <div class="relative group/tooltip hidden sm:block">
+                        <button onclick="toggleAspect()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95" id="aspectBtn">
+                            <i data-lucide="scan" class="w-5 h-5"></i>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Aspect Ratio</span>
+                    </div>
 
-            myWorker.onmessage = (e) => {
-                const { type, stage, percent, dataURI, mimeType, message } = e.data;
-                if (type === 'progress') {
-                    progressLabel.textContent = stage + '...';
-                    updateProgressBar(percent);
-                } else if (type === 'result') {
-                    updateProgressBar(100);
-                    setTimeout(() => {
-                        uriOutput.value = dataURI;
-                        updateHtmlOutput();
-                        createPreview(dataURI, mimeType);
-                        showMessage('URI and HTML generated!');
-                        setTimeout(() => progressSection.classList.add('hidden'), 500);
-                        if (myWorker) myWorker.terminate();
-                    }, 300);
-                } else if (type === 'error') {
-                    showMessage(message, true);
-                    progressSection.classList.add('hidden');
-                    if (myWorker) myWorker.terminate();
-                }
-            };
-            
-            myWorker.onerror = (e) => {
-                showMessage(`A worker error occurred: ${e.message}`, true);
-                progressSection.classList.add('hidden');
-                if (myWorker) myWorker.terminate();
-            };
+                    <!-- Screenshot -->
+                    <div class="relative group/tooltip hidden sm:block">
+                        <button onclick="takeSnapshot()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                            <i data-lucide="camera" class="w-5 h-5"></i>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Snapshot</span>
+                    </div>
 
-            myWorker.postMessage(file);
-        }
+                    <!-- Captions -->
+                    <div class="relative group/tooltip">
+                        <button onclick="toggleCaptions()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition relative disabled:opacity-30 disabled:cursor-not-allowed active:scale-95" id="ccBtn" disabled>
+                            <i data-lucide="subtitles" class="w-5 h-5"></i>
+                            <span id="ccBadge" class="absolute top-2 right-2 w-1.5 h-1.5 bg-brand-500 rounded-full hidden shadow-lg"></span>
+                        </button>
+                        <span class="pointer-events-none hidden sm:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Captions</span>
+                    </div>
 
-        fileInput.addEventListener('change', (event) => {
-            handleFile(event.target.files[0]);
-        });
+                    <!-- PiP -->
+                    <div class="relative group/tooltip">
+                        <button onclick="togglePiP()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                            <i data-lucide="picture-in-picture-2" class="w-5 h-5"></i>
+                        </button>
+                        <span class="pointer-events-none hidden sm:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Picture in Picture</span>
+                    </div>
 
-        const dropZone = document.querySelector('.container');
+                    <!-- Stats -->
+                    <div class="relative group/tooltip hidden sm:block">
+                        <button onclick="toggleStats()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Stats</span>
+                    </div>
+                    
+                    <!-- Fullscreen -->
+                    <div class="relative group/tooltip ml-2">
+                        <button onclick="toggleFullscreen()" class="text-white hover:bg-white/20 p-2.5 rounded-lg transition active:scale-95">
+                            <i data-lucide="maximize" id="fsIcon" class="w-5 h-5"></i>
+                        </button>
+                        <span class="pointer-events-none hidden sm:block absolute bottom-full mb-2 right-0 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">Fullscreen</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                previewContainer.classList.add('dragover');
-            });
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-                previewContainer.classList.remove('dragover');
-            }
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            previewContainer.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(files[0]);
-                fileInput.files = dataTransfer.files;
-                handleFile(files[0]);
-            }
-        });
-
-        previewContent.addEventListener('contextmenu', (e) => {
-            if (!currentFile) return;
-            e.preventDefault();
-
-            // Populate menu
-            document.getElementById('contextFileName').textContent = currentFile.name;
-            document.getElementById('contextFileType').textContent = currentFile.type || 'N/A';
-            document.getElementById('contextFileSize').textContent = formatBytes(currentFile.size);
-
-            const dimensionsItem = document.getElementById('contextDimensionsItem');
-            const dimensionsSpan = document.getElementById('contextFileDimensions');
-            const mediaElement = previewContent.querySelector('img, video');
-
-            dimensionsItem.classList.add('hidden'); // Hide by default
-            if (mediaElement) {
-                const isImage = mediaElement.tagName === 'IMG';
-                const width = isImage ? mediaElement.naturalWidth : mediaElement.videoWidth;
-                const height = isImage ? mediaElement.naturalHeight : mediaElement.videoHeight;
+        <!-- Stats Overlay -->
+        <div id="statsOverlay" class="absolute top-6 right-6 glass p-5 rounded-2xl text-xs font-mono text-gray-400 hidden z-30 w-80 shadow-2xl animate-fade-in">
+            <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                <span class="font-bold text-white flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3 text-brand-400"></i> Nerd Stats</span>
+                <button onclick="toggleStats()" class="hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-3 h-3"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between"><span>Dimensions</span> <span id="statRes" class="text-white font-bold">-</span></div>
+                <div class="flex justify-between"><span>Current Bitrate</span> <span id="statBitrate" class="text-brand-400">-</span></div>
+                <div class="flex justify-between"><span>Buffer Length</span> <span id="statBuffer" class="text-white">-</span></div>
+                <div class="flex justify-between"><span>Dropped Frames</span> <span id="statDropped" class="text-red-400">0</span></div>
+                <div class="flex justify-between"><span>Est. Bandwidth</span> <span id="statBw" class="text-brand-400">-</span></div>
+                <div class="flex justify-between"><span>Engine</span> <span id="statEngine" class="text-gray-500">HLS.js</span></div>
                 
-                if (width && height) {
-                    dimensionsSpan.textContent = `${width} x ${height} px`;
-                    dimensionsItem.classList.remove('hidden');
-                }
-            }
-            
-            // Position and show menu
-            fileContextMenu.style.left = `${e.clientX}px`;
-            fileContextMenu.style.top = `${e.clientY}px`;
-            fileContextMenu.classList.remove('hidden');
-        });
+                <div class="mt-4 pt-3 border-t border-white/10">
+                    <span class="block text-gray-500 text-[10px] mb-2 uppercase tracking-wider">Stream Source</span>
+                    <div class="bg-black/40 p-3 rounded-lg border border-white/5 break-all text-[10px] text-gray-300 select-all font-mono leading-relaxed" id="statUrl"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        urlInput.addEventListener('input', () => {
-            const url = urlInput.value;
-            if (url) {
-                activeSource = 'url';
-                currentFile = null;
-                fileInput.value = '';
-                uriOutput.value = '';
-                updateHtmlOutput();
-                createPreview(url, 'auto');
+    <!-- Info Bar -->
+    <div class="bg-dark-surface/80 glass p-4 border-t border-dark-border flex justify-between items-center shrink-0 z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.3)] info-bar">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div id="currentChannelLogo" class="w-12 h-12 bg-gradient-to-br from-dark-light to-dark-border rounded-xl flex items-center justify-center text-gray-500 border border-white/5 overflow-hidden shrink-0 shadow-lg">
+                <i data-lucide="tv" class="w-5 h-5 opacity-80"></i>
+            </div>
+            <div class="min-w-0">
+                <div class="flex items-center gap-3">
+                    <h2 id="currentChannelName" class="text-lg font-bold text-white leading-tight truncate">Select Channel</h2>
+                    <button id="currentFavBtn" onclick="toggleCurrentFavorite()" class="text-gray-600 hover:text-brand-400 transition hidden active:scale-90">
+                        <i data-lucide="heart" class="w-4 h-4 fill-current"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-400 mt-1">
+                    <span id="currentChannelGroup" class="text-brand-300 font-medium text-xs px-2 py-0.5 bg-brand-500/10 rounded-md border border-brand-500/20">--</span>
+                    <span id="networkHealth" class="flex items-center gap-1.5 text-xs ml-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-600" id="healthDot"></span>
+                        <span id="healthText" class="opacity-70">Idle</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-2 shrink-0">
+            <button onclick="shareCurrentChannel()" id="shareBtn" class="p-2.5 bg-dark-bg border border-dark-border hover:bg-dark-light hover:border-dark-light rounded-xl text-gray-400 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed active:scale-95" disabled title="Share Channel">
+                <i data-lucide="share-2" class="w-4 h-4"></i>
+            </button>
+            <button onclick="editCurrentChannel()" id="editBtn" class="p-2.5 bg-dark-bg border border-dark-border hover:bg-dark-light hover:border-dark-light rounded-xl text-gray-400 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed active:scale-95" disabled title="Edit Channel">
+                <i data-lucide="settings-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL: Add/Edit Channel -->
+<div id="addChannelModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden">
+        <!-- Decorative Glow -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+
+        <div class="flex justify-between items-center mb-8 relative">
+            <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                <span id="modalTitle">Add Stream</span>
+            </h3>
+            <button onclick="toggleModal('addChannelModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+<form id="channelForm" onsubmit="handleChannelSubmit(event)" class="space-y-5 relative">
+    <input type="hidden" id="channelId">
+    
+    <!-- Full-width inputs for primary info -->
+    <div>
+        <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Name</label>
+        <input type="text" id="inpName" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all placeholder-gray-500" placeholder="e.g., My Favorite Channel">
+    </div>
+
+    <div>
+        <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u8)</label>
+        <div class="relative group">
+            <input type="url" id="inpUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-all font-mono text-sm placeholder-gray-500" placeholder="https://...">
+            <i data-lucide="link-2" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+        </div>
+        <p id="urlValidationStatus" class="text-xs mt-2 ml-1 h-4 transition-opacity"></p>
+    </div>
+
+    <!-- Grid for Secondary Info & Perfectly Aligned Preview -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 items-stretch">
+        
+        <!-- Left Column: Inputs -->
+        <div class="sm:col-span-2 flex flex-col gap-5">
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Group</label>
+                <input type="text" id="inpGroup" list="groupSuggestions" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="e.g., News">
+                <datalist id="groupSuggestions"></datalist>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Logo URL</label>
+                <div class="relative group">
+                    <input type="url" id="inpLogo" class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="https://...">
+                    <i data-lucide="image" class="absolute left-4 top-3.5 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Logo Preview -->
+        <div class="sm:col-span-1 flex flex-col">
+            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Preview</label>
+            <div id="logoPreview" class="image-preview-container w-full h-full min-h-[120px] rounded-2xl border-2 border-dashed border-dark-border flex items-center justify-center relative overflow-hidden group transition-all hover:border-brand-500/50">
+                <div class="text-gray-600 flex flex-col items-center gap-2 preview-placeholder select-none">
+                    <i data-lucide="image-off" class="w-8 h-8 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="pt-6 flex gap-3 border-t border-dark-border/50">
+        <button type="button" onclick="toggleModal('addChannelModal')" class="flex-1 px-4 py-3 bg-transparent border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98]">Save Channel</button>
+    </div>
+    
+    <div id="deleteBtnContainer" class="hidden flex justify-center pt-2">
+         <button type="button" onclick="deleteChannel()" class="text-red-500 hover:text-red-400 text-xs py-2 px-3 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 opacity-80 hover:opacity-100 active:scale-95">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove Channel
+        </button>
+    </div>
+</form>
+    </div>
+</div>
+
+<!-- MODAL: Confirmation Dialog -->
+<div id="confirmModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="bg-dark-surface w-full max-w-md rounded-3xl border border-dark-border shadow-2xl p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden text-center">
+        <div class="bg-red-500/10 p-4 rounded-full mb-5 ring-1 ring-red-500/20 inline-block">
+            <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
+        </div>
+        <h3 id="confirmTitle" class="text-xl font-bold text-white mb-3">Are you sure?</h3>
+        <p id="confirmMessage" class="text-gray-400 mb-8 max-w-md leading-relaxed text-sm mx-auto">This action cannot be undone.</p>
+        <div class="flex gap-3">
+            <button id="confirmCancelBtn" class="flex-1 px-4 py-3 bg-dark-bg border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">
+                Cancel
+            </button>
+            <button id="confirmOkBtn" class="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-white transition font-bold shadow-lg shadow-red-500/20 transform active:scale-[0.98]">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Share Confirmation -->
+<div id="shareConfirmModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+        <div class="flex justify-between items-center mb-6 relative">
+            <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="inbox" class="w-6 h-6 text-brand-400"></i>
+                Add Shared Channel
+            </h3>
+            <button onclick="closeShareConfirm()" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <p class="text-gray-400 text-sm mb-6">Someone shared a channel with you. Review the details below before adding it to your list.</p>
+        
+        <div class="space-y-4 mb-8">
+            <div class="flex items-center gap-4 bg-dark-bg/50 p-4 rounded-2xl border border-dark-border">
+                <div id="shareLogo" class="w-14 h-14 bg-dark-border rounded-xl flex items-center justify-center border border-white/10 overflow-hidden shrink-0">
+                    <!-- Logo will be injected here -->
+                </div>
+                <div>
+                    <h4 id="shareName" class="text-lg font-bold text-white">Channel Name</h4>
+                    <span id="shareGroup" class="text-sm text-brand-300">Channel Group</span>
+                </div>
+            </div>
+            <div>
+                 <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL</label>
+                 <div id="shareUrl" class="bg-dark-bg p-3 rounded-lg border border-dark-border break-all text-xs text-gray-400 select-all font-mono">
+                     <!-- URL will be injected here -->
+                 </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="closeShareConfirm()" class="flex-1 px-4 py-3 bg-transparent border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">Cancel</button>
+            <button id="addSharedBtn" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98]">
+                <i data-lucide="plus" class="inline w-4 h-4 mr-1.5 -ml-1"></i> Add to My List
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-8 right-8 glass px-6 py-4 rounded-2xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-50">
+    <div id="toastIcon" class="bg-brand-500/20 p-2 rounded-full"><i data-lucide="check" class="text-brand-400 w-5 h-5"></i></div>
+    <div class="flex flex-col">
+        <span id="toastMsg" class="font-medium text-sm tracking-wide text-white">Action successful</span>
+    </div>
+</div>
+
+<script>
+    // --- STATE ---
+    let channels = JSON.parse(localStorage.getItem('sleek_channels')) || [];
+    let favorites = JSON.parse(localStorage.getItem('sleek_favorites')) || [];
+    let currentChannelId = null;
+    let hls = null;
+    let isDesktopSidebarCollapsed = false;
+    let showOnlyFavorites = false;
+    let isCaptionsOn = false;
+    let aspectModes = ['contain', 'cover', 'fill'];
+    let currentAspectIndex = 0;
+    let inactivityTimer;
+    let animationFrameId = null;
+    let sharedChannelData = null; // For handling shared links
+
+    const video = document.getElementById('videoPlayer');
+
+    // --- DOM REFS ---
+    const els = {
+        videoContainer: document.getElementById('videoContainer'),
+        backgroundCanvas: document.getElementById('backgroundCanvas'),
+        controlsOverlay: document.getElementById('controlsOverlay'),
+        channelList: document.getElementById('channelList'),
+        searchInput: document.getElementById('searchInput'),
+        groupFilterLabel: document.getElementById('selectedGroupLabel'),
+        groupOptionsList: document.getElementById('groupOptionsList'),
+        sidebar: document.getElementById('sidebar'),
+        sidebarToggleStrip: document.getElementById('sidebarToggleStrip'),
+        channelCount: document.getElementById('channelCount'),
+        loading: document.getElementById('loadingOverlay'),
+        loadingTitle: document.getElementById('loadingTitle'),
+        loadingStatus: document.getElementById('loadingStatus'),
+        error: document.getElementById('errorOverlay'),
+        errorMessage: document.getElementById('errorMessage'),
+        startScreen: document.getElementById('startScreen'),
+        networkDot: document.getElementById('healthDot'),
+        networkText: document.getElementById('healthText'),
+        favBtn: document.getElementById('currentFavBtn'),
+        logoPreview: document.getElementById('logoPreview'),
+        inpLogo: document.getElementById('inpLogo'),
+        inpUrl: document.getElementById('inpUrl'),
+        urlValidationStatus: document.getElementById('urlValidationStatus'),
+        fullscreenInfo: document.getElementById('fullscreenInfo'),
+        fullscreenChannelLogo: document.getElementById('fullscreenChannelLogo'),
+        fullscreenChannelName: document.getElementById('fullscreenChannelName'),
+        confirm: {
+            modal: document.getElementById('confirmModal'),
+            title: document.getElementById('confirmTitle'),
+            message: document.getElementById('confirmMessage'),
+            okBtn: document.getElementById('confirmOkBtn'),
+            cancelBtn: document.getElementById('confirmCancelBtn'),
+        },
+        stats: {
+            overlay: document.getElementById('statsOverlay'),
+            res: document.getElementById('statRes'),
+            bitrate: document.getElementById('statBitrate'),
+            buffer: document.getElementById('statBuffer'),
+            dropped: document.getElementById('statDropped'),
+            bw: document.getElementById('statBw'),
+            url: document.getElementById('statUrl'),
+            engine: document.getElementById('statEngine')
+        }
+    };
+
+    let currentFilterGroup = 'all';
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Lucide icons might not be loaded yet due to defer, so wait for it
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        } else {
+            // Fallback if the script execution order is unexpected
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+        
+        renderChannels();
+        updateGroupDropdown();
+        setupPlayerEvents();
+        setupKeyboardShortcuts();
+        setupInactivityControls();
+        handleIncomingShareLink();
+        
+        const debouncedVerifyUrl = debounce(verifyUrl, 500);
+        els.inpUrl.addEventListener('input', debouncedVerifyUrl);
+        els.searchInput.addEventListener('input', renderChannels);
+        els.inpLogo.addEventListener('input', updateLogoPreview);
+
+        window.addEventListener('resize', () => {
+            if(window.innerWidth >= 768 && els.sidebar.style.height) { // transitioning from mobile to desktop
+                els.sidebar.style.height = ''; // reset mobile height
+                if(!isDesktopSidebarCollapsed) {
+                     els.sidebar.style.width = '340px';
+                }
             }
         });
         
-        borderColorHexInput.addEventListener('input', (e) => {
-            const hex = e.target.value.replace(/[^0-9a-fA-F]/g, '');
-            e.target.value = hex;
-            if (hex.length === 6) {
-                const contrastColor = getContrastColor(hex);
-                colorInputGroup.style.backgroundColor = `#${hex}`;
-                hexInputPrefix.style.color = contrastColor;
-                borderColorHexInput.style.color = contrastColor;
-                updateHtmlOutput();
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
+                lucide.createIcons();
             }
         });
+    });
 
-        [widthInput, heightInput, percentageValueInput, altNameInput, borderThicknessInput, borderRadiusInput].forEach(input => {
-            input.addEventListener('input', updateHtmlOutput);
-        });
+    // --- BLURRED BACKGROUND ---
+    function updateBackgroundCanvas() {
+        if (!video.paused && !video.ended && video.videoWidth > 0) {
+            const canvas = els.backgroundCanvas;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+        animationFrameId = requestAnimationFrame(updateBackgroundCanvas);
+    }
 
-        copyUriButton.addEventListener('click', () => {
-            if (!uriOutput.value) return showMessage('No URI to copy.', true);
-            navigator.clipboard.writeText(uriOutput.value).then(() => showMessage('Data URI Copied!'), () => showMessage('Copy failed.', true));
-        });
+    function startBackgroundLoop() {
+        if (!animationFrameId) {
+            updateBackgroundCanvas();
+        }
+    }
 
-        copyHtmlButton.addEventListener('click', () => {
-             if (!htmlOutput.value) return showMessage('No HTML to copy.', true);
-            navigator.clipboard.writeText(htmlOutput.value).then(() => showMessage('HTML Code Copied!'), () => showMessage('Copy failed.', true));
-        });
-
-        downloadHtmlButton.addEventListener('click', () => {
-            if (htmlOutput.value) {
-                const blob = new Blob([htmlOutput.value], { type: 'text/html' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = (altNameInput.value || 'generated_media') + '.html';
-                a.click();
-                URL.revokeObjectURL(a.href);
-                showMessage('File ready for download!');
-            } else {
-                showMessage('Nothing to download.', true);
-            }
-        });
-
-        clearButton.addEventListener('click', () => {
-            if (myWorker) myWorker.terminate();
+    function stopBackgroundLoop() {
+        if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
-            progressSection.classList.add('hidden');
-            fileInput.value = '';
-            urlInput.value = '';
-            uriOutput.value = '';
-            htmlOutput.value = '';
-            widthInput.value = '';
-            heightInput.value = '';
-            percentageValueInput.value = '';
-            altNameInput.value = '';
-            borderThicknessInput.value = '';
-            borderRadiusInput.value = '';
-            borderColorHexInput.value = '000000';
-            colorInputGroup.style.backgroundColor = '#1f2937';
-            hexInputPrefix.style.color = '#e0e0e0';
-            borderColorHexInput.style.color = '#e0e0e0';
-            activeSource = '';
-            currentFile = null;
-            
-            document.querySelectorAll('.custom-select').forEach(sel => {
-                const firstOption = sel.querySelector('.custom-option');
-                sel.querySelector('.custom-select-trigger span').textContent = firstOption.textContent;
-                sel.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
-                firstOption.classList.add('selected');
-            });
-            dimensionsInputs.classList.remove('hidden');
-            percentageInput.classList.add('hidden');
-
-            previewContent.innerHTML = '<span class="text-gray-500 text-sm">Preview will appear here, or drop a file to start.</span>';
-            previewContainer.classList.remove('left', 'right');
-            showMessage('Cleared!');
+            animationFrameId = null;
+            const canvas = els.backgroundCanvas;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+    
+    // --- UI INACTIVITY ---
+    function setupInactivityControls() {
+        function showUI() {
+            if (!els.videoContainer.classList.contains('player-active')) return;
+            els.controlsOverlay.classList.remove('ui-hidden');
+            if (document.fullscreenElement) {
+                els.fullscreenInfo.classList.remove('ui-hidden');
+            }
+        }
+        function hideUI() {
+            if (video.paused) return;
+            els.controlsOverlay.classList.add('ui-hidden');
+            els.fullscreenInfo.classList.add('ui-hidden');
+        }
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            showUI();
+            inactivityTimer = setTimeout(hideUI, 3000);
+        }
+        els.videoContainer.addEventListener('mousemove', resetInactivityTimer);
+        els.videoContainer.addEventListener('mouseleave', hideUI);
+        video.addEventListener('pause', () => {
+            showUI();
+            clearTimeout(inactivityTimer);
         });
+        video.addEventListener('play', resetInactivityTimer);
+    }
+
+    // --- KEYBOARD SHORTCUTS ---
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.closest('#addChannelModal') || e.target.closest('#confirmModal')) return;
+
+            switch(e.code) {
+                case 'Space': e.preventDefault(); togglePlay(); break;
+                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
+                case 'KeyM': toggleMute(); break;
+                case 'ArrowUp': e.preventDefault(); setVolume(Math.min(1, video.volume + 0.1)); break;
+                case 'ArrowDown': e.preventDefault(); setVolume(Math.max(0, video.volume - 0.1)); break;
+            }
+        });
+    }
+
+    // --- URL VALIDATION ---
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    async function verifyUrl() {
+        const url = els.inpUrl.value.trim();
+        const statusEl = els.urlValidationStatus;
         
-        document.addEventListener('DOMContentLoaded', () => {
-             document.querySelectorAll('.custom-select').forEach(sel => {
-                const firstOption = sel.querySelector('.custom-option');
-                sel.querySelector('.custom-select-trigger span').textContent = firstOption.textContent;
-                firstOption.classList.add('selected');
-             });
-        });
-    </script>
+        if (!url) {
+            statusEl.textContent = '';
+            return;
+        }
+        
+        if (!url.endsWith('.m3u8')) {
+            statusEl.textContent = 'URL should end with .m3u8 for compatibility.';
+            statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
+            return;
+        }
 
+        statusEl.textContent = 'Verifying URL...';
+        statusEl.className = 'text-xs text-gray-500 mt-2 ml-1 h-4 transition-opacity animate-pulse';
+
+        try {
+            // Using HEAD request for speed as we only need status
+            const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
+            if (response.ok) {
+                 statusEl.textContent = 'URL is valid and reachable.';
+                 statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
+            } else {
+                 statusEl.textContent = `URL is reachable but returned status ${response.status}.`;
+                 statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
+            }
+        } catch (error) {
+            // Catch CORS errors, which are common but don't mean the URL is bad for HLS.js
+            if (error instanceof TypeError) {
+                statusEl.textContent = 'URL seems valid (CORS check).';
+                statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
+            } else {
+                statusEl.textContent = 'This URL is invalid or cannot be reached.';
+                statusEl.className = 'text-xs text-red-500 mt-2 ml-1 h-4 transition-opacity';
+            }
+        } finally {
+            statusEl.classList.remove('animate-pulse');
+        }
+    }
+    
+    // --- ENHANCED IMAGE PREVIEW ---
+    function updateLogoPreview() {
+        const url = els.inpLogo.value.trim();
+        const previewContainer = els.logoPreview;
+        
+        const placeholderHTML = `
+            <div class="text-gray-600 flex flex-col items-center gap-2 animate-fade-in select-none">
+                <i data-lucide="image" class="w-8 h-8 opacity-50"></i>
+                <span class="text-[10px] uppercase tracking-wide opacity-50">No Image</span>
+            </div>`;
+
+        const loadingHTML = `<div class="mini-loader"></div>`;
+
+        if (!url) {
+            previewContainer.innerHTML = placeholderHTML;
+            lucide.createIcons();
+            return;
+        }
+
+        previewContainer.innerHTML = loadingHTML;
+
+        const img = new Image();
+        img.src = url;
+
+        img.onload = () => {
+            previewContainer.innerHTML = `<img src="${url}" class="max-w-[80%] max-h-[80%] drop-shadow-xl animate-fade-in" draggable="false" alt="Preview">`;
+        };
+
+        img.onerror = () => {
+            previewContainer.innerHTML = `
+                <div class="text-red-400/50 flex flex-col items-center gap-2 animate-fade-in select-none">
+                    <i data-lucide="image-off" class="w-8 h-8"></i>
+                    <span class="text-[10px] uppercase tracking-wide">Load Failed</span>
+                </div>`;
+            lucide.createIcons();
+        };
+    }
+
+    // --- SIDEBAR ---
+    function toggleSidebar() {
+        const sidebar = els.sidebar;
+        const mobileIcon = sidebar.querySelector('.md\\:hidden i');
+        const desktopIcon = sidebar.querySelector('.hidden.md\\:block i');
+
+        if (window.innerWidth < 768) {
+            // Mobile: Toggle height
+            const headerHeight = sidebar.querySelector('.p-5').offsetHeight;
+            const isCollapsed = sidebar.style.height === `${headerHeight}px`;
+
+            if (isCollapsed) {
+                sidebar.style.height = '40vh';
+                mobileIcon.setAttribute('data-lucide', 'chevron-up');
+            } else {
+                sidebar.style.height = `${headerHeight}px`;
+                mobileIcon.setAttribute('data-lucide', 'chevron-down');
+            }
+        } else {
+            // Desktop: Toggle width
+            isDesktopSidebarCollapsed = !isDesktopSidebarCollapsed;
+            if (isDesktopSidebarCollapsed) {
+                sidebar.style.width = '0px';
+                sidebar.classList.add('opacity-0', 'pointer-events-none');
+                desktopIcon.setAttribute('data-lucide', 'chevron-right');
+                els.sidebarToggleStrip.classList.remove('hidden');
+                els.sidebarToggleStrip.classList.add('flex');
+            } else {
+                sidebar.style.width = '340px';
+                sidebar.classList.remove('opacity-0', 'pointer-events-none');
+                desktopIcon.setAttribute('data-lucide', 'chevron-left');
+                els.sidebarToggleStrip.classList.add('hidden');
+                els.sidebarToggleStrip.classList.remove('flex');
+            }
+        }
+        setTimeout(() => lucide.createIcons(), 50); // Delay to allow DOM update
+    }
+
+    // --- DROPDOWN ---
+    function toggleDropdown() {
+        document.getElementById('groupFilterDropdown').classList.toggle('open');
+    }
+
+    function selectGroup(group) {
+        currentFilterGroup = group;
+        els.groupFilterLabel.textContent = group === 'all' ? 'All Groups' : group;
+        document.getElementById('groupFilterDropdown').classList.remove('open');
+        renderChannels();
+    }
+
+    function updateGroupDropdown() {
+        const groups = [...new Set(channels.map(c => c.group || 'Uncategorized'))].sort();
+        let html = `<div onclick="selectGroup('all')" class="px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === 'all' ? 'bg-brand-500/10 text-brand-300' : ''}">All Groups</div>`;
+        
+        groups.forEach(g => {
+            html += `<div onclick="selectGroup('${g}')" class="px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === g ? 'bg-brand-500/10 text-brand-300' : ''}">${g}</div>`;
+        });
+        els.groupOptionsList.innerHTML = html;
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select')) {
+            document.getElementById('groupFilterDropdown').classList.remove('open');
+        }
+    });
+
+    // --- CHANNEL LOGIC ---
+    function saveToLocal() {
+        localStorage.setItem('sleek_channels', JSON.stringify(channels));
+        localStorage.setItem('sleek_favorites', JSON.stringify(favorites));
+        updateGroupDropdown();
+    }
+
+    function handleChannelSubmit(e) {
+        e.preventDefault();
+        const formData = {
+            id: document.getElementById('channelId').value || Date.now().toString(),
+            name: document.getElementById('inpName').value,
+            url: document.getElementById('inpUrl').value,
+            group: document.getElementById('inpGroup').value || 'Uncategorized',
+            logo: document.getElementById('inpLogo').value
+        };
+
+        const existingIndex = channels.findIndex(c => c.id === formData.id);
+        if (existingIndex > -1) {
+            channels[existingIndex] = formData;
+            showToast(`Updated ${formData.name}`);
+        } else {
+            channels.push(formData);
+            showToast(`Added ${formData.name}`);
+        }
+
+        saveToLocal();
+        renderChannels();
+        toggleModal('addChannelModal');
+        
+        if (currentChannelId === formData.id) loadChannel(formData.id);
+    }
+
+    function toggleFavorite(id, e) {
+        if(e) e.stopPropagation();
+        
+        const isCurrentlyFav = favorites.includes(id);
+        
+        if(isCurrentlyFav) {
+            favorites = favorites.filter(fid => fid !== id);
+        } else {
+            favorites.push(id);
+        }
+        
+        saveToLocal();
+        updateFavButtonState();
+
+        if (showOnlyFavorites) {
+            renderChannels();
+        } else {
+            const btn = e.currentTarget;
+            if (btn) {
+                btn.style.transform = 'scale(0.8)';
+                setTimeout(() => btn.style.transform = 'scale(1)', 150);
+
+                if (!isCurrentlyFav) {
+                    btn.classList.remove('text-gray-600', 'opacity-0');
+                    btn.classList.add('text-brand-400', 'opacity-100');
+                    btn.innerHTML = `<i data-lucide="heart" class="w-4 h-4 fill-current animate-heart-beat"></i>`;
+                } else {
+                    btn.classList.remove('text-brand-400', 'opacity-100');
+                    btn.classList.add('text-gray-600', 'opacity-0');
+                    btn.innerHTML = `<i data-lucide="heart" class="w-4 h-4"></i>`;
+                }
+                lucide.createIcons();
+            }
+        }
+    }
+
+    function toggleCurrentFavorite() {
+        if(currentChannelId) toggleFavorite(currentChannelId);
+    }
+
+    function filterFavorites() {
+        showOnlyFavorites = !showOnlyFavorites;
+        const btn = document.getElementById('favFilterBtn');
+        if(showOnlyFavorites) {
+            btn.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+        } else {
+            btn.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+        }
+        renderChannels();
+    }
+
+    function renderChannels() {
+        const query = els.searchInput.value.toLowerCase();
+        
+        const filtered = channels.filter(c => {
+            const group = c.group || 'Uncategorized';
+            const matchesSearch = c.name.toLowerCase().includes(query) || group.toLowerCase().includes(query);
+            const matchesGroup = currentFilterGroup === 'all' || group === currentFilterGroup;
+            const matchesFav = showOnlyFavorites ? favorites.includes(c.id) : true;
+            return matchesSearch && matchesGroup && matchesFav;
+        });
+
+        els.channelCount.textContent = `${filtered.length} loaded`;
+
+        els.channelList.innerHTML = filtered.map(c => {
+            const isFav = favorites.includes(c.id);
+            const isActive = currentChannelId === c.id;
+            const group = c.group || 'Uncategorized';
+            
+            return `
+            <div id="channel-item-${c.id}" onclick="loadChannel('${c.id}')" 
+                 class="channel-item cursor-pointer p-3 rounded-xl border border-transparent group relative flex items-center gap-4 mb-1 ${isActive ? 'active' : 'hover:bg-dark-surface/60 hover:border-dark-light/50'}">
+                
+                <div class="active-indicator absolute left-0 top-3 bottom-3 w-1 bg-brand-500 rounded-r-full opacity-0 transition-all duration-300 scale-y-50 origin-left"></div>
+
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-dark-light to-dark-border flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 relative shadow-sm group-hover:shadow-md transition-all">
+                    ${c.logo ? `<img src="${c.logo}" class="w-full h-full object-contain p-0.5" draggable="false" onerror="this.onerror=null; this.parentElement.innerHTML='<i data-lucide=\\'tv\\'></i>'; lucide.createIcons();">` : '<i data-lucide="tv" class="w-5 h-5 text-gray-500"></i>'}
+                </div>
+                
+                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                    <h4 class="text-sm font-medium transition-colors truncate ${isActive ? 'text-white font-bold' : 'text-gray-300 group-hover:text-white'}">${c.name}</h4>
+                    <p class="text-[11px] truncate transition-colors ${isActive ? 'text-brand-300' : 'text-gray-500 group-hover:text-gray-400'}">${group}</p>
+                </div>
+                
+                <button onclick="toggleFavorite('${c.id}', event)" class="p-2 hover:bg-white/10 rounded-full transition-all active:scale-90 ${isFav ? 'text-brand-400 opacity-100' : 'text-gray-600 opacity-0 group-hover:opacity-100'}">
+                    <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'fill-current' : ''}"></i>
+                </button>
+            </div>
+        `}).join('');
+
+        if (filtered.length === 0) {
+            els.channelList.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center p-4 text-gray-500">
+                    <i data-lucide="search-x" class="w-10 h-10 mb-3 opacity-30"></i>
+                    <p class="text-sm font-medium opacity-80">No channels found</p>
+                    <p class="text-xs opacity-50 mt-1">Try adjusting your filters or search.</p>
+                </div>
+            `;
+        }
+        
+        lucide.createIcons();
+    }
+
+    // --- PLAYER ENGINE ---
+    
+    /**
+     * MODIFICATION: Added startFragPrefetch to potentially speed up stream starts.
+     * This allows HLS.js to fetch the first video segment while the main playlist is still being parsed.
+     */
+    const hlsConfig = {
+        abrEwmaDefaultEstimate: 1000000,
+        maxBufferLength: 15,
+        maxMaxBufferLength: 30, // Increased slightly for more stability on choppy networks
+        startFragPrefetch: true,
+    };
+
+    function loadChannel(id) {
+        const channel = channels.find(c => c.id === id);
+        if (!channel || (id === currentChannelId && hls)) return;
+
+        // Surgically update active state instead of full re-render
+        if (currentChannelId) {
+            document.getElementById(`channel-item-${currentChannelId}`)?.classList.remove('active');
+        }
+        document.getElementById(`channel-item-${id}`)?.classList.add('active');
+
+        currentChannelId = id;
+        document.title = `SleekrStreem • ${channel.name}`;
+        
+        document.getElementById('currentChannelName').textContent = channel.name;
+        document.getElementById('currentChannelGroup').textContent = channel.group || 'Uncategorized';
+        els.fullscreenChannelName.textContent = channel.name;
+        document.getElementById('editBtn').disabled = false;
+        document.getElementById('shareBtn').disabled = false;
+        els.startScreen.style.display = 'none';
+        els.error.style.display = 'none';
+        els.videoContainer.classList.add('player-active');
+        
+        const aspectMode = aspectModes[currentAspectIndex];
+        if (aspectMode === 'contain') {
+            els.videoContainer.classList.add('has-blurred-bg');
+        } else {
+            els.videoContainer.classList.remove('has-blurred-bg');
+            stopBackgroundLoop();
+        }
+
+        // MODIFICATION: More descriptive initial loading text
+        els.loading.style.display = 'flex';
+        els.loadingTitle.textContent = `Loading: ${channel.name}`;
+        els.loadingStatus.textContent = "Initializing player...";
+        
+        const logoEl = document.getElementById('currentChannelLogo');
+        const fullscreenLogoEl = els.fullscreenChannelLogo;
+        const imgHtml = channel.logo 
+            ? `<img src="${channel.logo}" class="w-full h-full object-contain p-0.5" draggable="false" onerror="this.onerror=null; this.parentElement.innerHTML='<i data-lucide=\\'tv\\'></i>'; lucide.createIcons();">`
+            : `<i data-lucide="tv" class="w-6 h-6 opacity-80"></i>`;
+        
+        logoEl.innerHTML = imgHtml;
+        fullscreenLogoEl.innerHTML = imgHtml;
+        if (!channel.logo) lucide.createIcons();
+
+        updateFavButtonState();
+
+        if (hls) hls.destroy();
+
+        if (Hls.isSupported()) {
+            hls = new Hls(hlsConfig);
+            
+            // MODIFICATION: Add more event listeners for granular feedback
+            hls.on(Hls.Events.MANIFEST_LOADING, () => {
+                els.loadingStatus.textContent = "Connecting to stream...";
+            });
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                els.loadingStatus.textContent = "Stream manifest loaded, preparing video...";
+                video.play().catch(() => {});
+                checkCaptions();
+            });
+            hls.on(Hls.Events.LEVEL_LOADED, () => {
+                els.loadingStatus.textContent = "Video data received, starting playback...";
+            });
+
+            hls.loadSource(channel.url);
+            hls.attachMedia(video);
+            
+            /**
+             * MODIFICATION: Revamped HLS error handling for smarter responses.
+             * Now, it specifically checks for manifest/URL errors to prompt for deletion,
+             * while handling temporary network issues with retries and media errors with recovery attempts.
+             */
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    const failedChannelId = currentChannelId;
+                    const failedChannelName = channel.name;
+                    
+                    switch (data.details) {
+                        case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
+                        case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
+                            // This is a strong indicator the URL is invalid or permanently offline.
+                            hls.destroy();
+                            stopPlayer();
+                            showConfirmation(
+                                'Invalid Stream URL',
+                                `The stream for "<strong>${failedChannelName}</strong>" failed to load. The URL appears to be invalid. Would you like to remove this channel?`,
+                                () => {
+                                    channels = channels.filter(c => c.id !== failedChannelId);
+                                    favorites = favorites.filter(fid => fid !== failedChannelId);
+                                    saveToLocal();
+                                    renderChannels();
+                                    showToast(`Removed broken channel: ${failedChannelName}`, 'error');
+                                }
+                            );
+                            break;
+
+                        case Hls.ErrorDetails.NETWORK_ERROR:
+                             // A temporary network issue. Try to recover.
+                            els.loading.style.display = 'flex';
+                            els.loadingTitle.textContent = 'Reconnecting...';
+                            els.loadingStatus.textContent = 'Network connection lost. Attempting to reconnect.';
+                            updateNetworkHealth('poor');
+                            hls.startLoad();
+                            break;
+
+                        case Hls.ErrorDetails.MEDIA_ERROR:
+                             // A problem with the video stream itself. Try to recover.
+                            els.loading.style.display = 'flex';
+                            els.loadingTitle.textContent = 'Recovering Stream...';
+                            els.loadingStatus.textContent = 'A media error occurred. Attempting to recover.';
+                            updateNetworkHealth('fair');
+                            hls.recoverMediaError();
+                            break;
+
+                        default:
+                            // A generic or unhandled fatal error.
+                            hls.destroy();
+                            showError(`An unexpected error occurred. The stream for "${failedChannelName}" may be offline or incompatible.`);
+                            break;
+                    }
+                }
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = channel.url;
+            video.addEventListener('error', () => showError("Native HLS playback is not supported for this stream."));
+        }
+    }
+
+    function updateNetworkHealth(status) {
+        const colors = { good: 'bg-green-500', fair: 'bg-yellow-500', poor: 'bg-red-500' };
+        const texts = { good: 'Stable', fair: 'Unstable', poor: 'Poor' };
+        
+        els.networkDot.className = `w-1.5 h-1.5 rounded-full transition-colors ${colors[status] || 'bg-gray-600'}`;
+        els.networkText.textContent = texts[status] || 'Offline';
+    }
+
+    function updateFavButtonState() {
+        if(!currentChannelId) {
+            els.favBtn.classList.add('hidden');
+            return;
+        }
+        els.favBtn.classList.remove('hidden');
+        const isFav = favorites.includes(currentChannelId);
+        els.favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-brand-400 text-brand-400' : 'text-gray-500'}"></i>`;
+        lucide.createIcons();
+    }
+
+    // --- CONTROLS ---
+    function toggleFullscreen() {
+        const container = document.getElementById('videoContainer');
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => console.error(err));
+            document.getElementById('fsIcon').setAttribute('data-lucide', 'minimize');
+        } else {
+            document.exitFullscreen();
+            document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
+        }
+        setTimeout(lucide.createIcons, 100);
+    }
+    
+    async function togglePiP() {
+        try {
+            if (video !== document.pictureInPictureElement) {
+                await video.requestPictureInPicture();
+            } else {
+                await document.exitPictureInPicture();
+            }
+        } catch (error) {
+            showToast("PiP is not available or supported.", "error");
+        }
+    }
+
+    function togglePlay() {
+        if(!currentChannelId) return;
+        if (video.paused) {
+            video.play();
+            document.getElementById('playIcon').setAttribute('data-lucide', 'pause');
+        } else {
+            video.pause();
+            document.getElementById('playIcon').setAttribute('data-lucide', 'play');
+        }
+        lucide.createIcons();
+    }
+
+    function setVolume(val) {
+        video.volume = val;
+        video.muted = val == 0;
+        const icon = val == 0 ? 'volume-x' : (val < 0.5 ? 'volume-1' : 'volume-2');
+        document.getElementById('volIcon').setAttribute('data-lucide', icon);
+        document.querySelector('input[type=range]').value = val;
+        lucide.createIcons();
+    }
+
+    function toggleMute() {
+        video.muted = !video.muted;
+        let icon;
+        if (video.muted) {
+            icon = 'volume-x';
+        } else {
+            icon = video.volume < 0.5 ? 'volume-1' : 'volume-2';
+        }
+        document.getElementById('volIcon').setAttribute('data-lucide', icon);
+        lucide.createIcons();
+    }
+
+    function toggleAspect() {
+        currentAspectIndex = (currentAspectIndex + 1) % aspectModes.length;
+        const mode = aspectModes[currentAspectIndex];
+        video.style.objectFit = mode;
+        showToast(`Aspect Ratio: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+        
+        if (mode === 'contain') {
+            els.videoContainer.classList.add('has-blurred-bg');
+            startBackgroundLoop();
+        } else {
+            els.videoContainer.classList.remove('has-blurred-bg');
+            stopBackgroundLoop();
+        }
+    }
+
+    function takeSnapshot() {
+        if(video.videoWidth === 0 || !currentChannelId) {
+             showToast("Cannot take snapshot, no video playing.", "error");
+             return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const link = document.createElement('a');
+        const channel = channels.find(c => c.id === currentChannelId);
+        const name = channel ? channel.name.replace(/ /g, '_') : 'stream';
+        link.download = `snapshot_${name}_${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        showToast("Snapshot saved");
+    }
+
+    // --- CAPTIONS ---
+    function checkCaptions() {
+        const hasSubs = video.textTracks.length > 0 || (hls && hls.subtitleTracks.length > 0);
+        document.getElementById('ccBtn').disabled = !hasSubs;
+    }
+
+    function toggleCaptions() {
+        isCaptionsOn = !isCaptionsOn;
+        const badge = document.getElementById('ccBadge');
+        const btn = document.getElementById('ccBtn');
+
+        badge.classList.toggle('hidden', !isCaptionsOn);
+        btn.classList.toggle('text-brand-400', isCaptionsOn);
+        showToast(`Captions ${isCaptionsOn ? 'ON' : 'OFF'}`);
+
+        for (let i = 0; i < video.textTracks.length; i++) {
+             video.textTracks[i].mode = isCaptionsOn ? 'showing' : 'hidden';
+        }
+        if(hls) {
+             hls.subtitleDisplay = isCaptionsOn;
+             if (isCaptionsOn && hls.subtitleTrack === -1) hls.subtitleTrack = 0;
+        }
+    }
+
+    // --- STATS & EVENTS ---
+    function toggleStats() {
+        els.stats.overlay.classList.toggle('hidden');
+    }
+
+    function setupPlayerEvents() {
+        let bufferTimeout;
+        video.addEventListener('waiting', () => {
+            // Only show buffering message if it persists for more than a second
+            bufferTimeout = setTimeout(() => {
+                els.loading.style.display = 'flex';
+                els.loadingTitle.textContent = "Buffering...";
+                els.loadingStatus.textContent = "The stream is buffering due to a slow or unstable connection.";
+                updateNetworkHealth('fair');
+            }, 1000);
+        });
+        video.addEventListener('playing', () => {
+            clearTimeout(bufferTimeout);
+            els.loading.style.display = 'none';
+            updateNetworkHealth('good');
+            document.getElementById('liveBadge').classList.remove('hidden');
+            document.getElementById('liveBadge').classList.add('flex');
+            document.getElementById('playIcon').setAttribute('data-lucide', 'pause');
+            if (aspectModes[currentAspectIndex] === 'contain') {
+                startBackgroundLoop();
+            }
+            lucide.createIcons();
+        });
+        video.addEventListener('loadedmetadata', () => {
+            els.loading.style.display = 'none';
+        });
+    }
+
+    function updateStats() {
+        if (els.stats.overlay.classList.contains('hidden')) return;
+        
+        if (hls && hls.levels && hls.levels[hls.currentLevel]) {
+            const level = hls.levels[hls.currentLevel];
+            els.stats.res.textContent = `${level.width}x${level.height}`;
+            els.stats.bitrate.textContent = `${(level.bitrate / 1000).toFixed(0)} kbps`;
+            els.stats.engine.textContent = "HLS.js (MSE)";
+        } else {
+             els.stats.res.textContent = `${video.videoWidth}x${video.videoHeight}`;
+             els.stats.engine.textContent = "Native";
+        }
+
+        if(video.buffered.length) {
+            const bufLen = video.buffered.end(video.buffered.length -1) - video.currentTime;
+            els.stats.buffer.textContent = `${bufLen.toFixed(2)} sec`;
+        }
+        
+        els.stats.dropped.textContent = video.webkitDroppedFrameCount || video.mozDecodedFrames - video.mozPaintedFrames || 0;
+        if(hls && hls.bandwidthEstimate) els.stats.bw.textContent = (hls.bandwidthEstimate / 1000000).toFixed(2) + " Mbps";
+        
+        const current = channels.find(c => c.id === currentChannelId);
+        if(current) els.stats.url.textContent = current.url;
+    }
+
+    setInterval(updateStats, 1000);
+
+    // --- HELPERS ---
+    function toggleModal(id) {
+        const m = document.getElementById(id);
+        if (m.classList.contains('hidden')) {
+            if(id === 'addChannelModal' && !m.dataset.editing) {
+                document.getElementById('channelForm').reset();
+                document.getElementById('channelId').value = '';
+                document.getElementById('modalTitle').textContent = 'Add Stream';
+                document.getElementById('deleteBtnContainer').classList.add('hidden');
+                els.urlValidationStatus.textContent = '';
+                updateLogoPreview();
+            }
+            delete m.dataset.editing;
+            m.classList.remove('hidden');
+        } else {
+            m.classList.add('hidden');
+        }
+    }
+
+    // --- Custom Confirmation Modal ---
+    function showConfirmation(title, message, onConfirm) {
+        els.confirm.title.textContent = title;
+        els.confirm.message.innerHTML = message;
+        
+        const newOkBtn = els.confirm.okBtn.cloneNode(true);
+        els.confirm.okBtn.parentNode.replaceChild(newOkBtn, els.confirm.okBtn);
+        els.confirm.okBtn = newOkBtn;
+
+        const newCancelBtn = els.confirm.cancelBtn.cloneNode(true);
+        els.confirm.cancelBtn.parentNode.replaceChild(newCancelBtn, els.confirm.cancelBtn);
+        els.confirm.cancelBtn = newCancelBtn;
+
+        els.confirm.okBtn.addEventListener('click', () => {
+            onConfirm();
+            els.confirm.modal.classList.add('hidden');
+        });
+
+        els.confirm.cancelBtn.addEventListener('click', () => {
+            els.confirm.modal.classList.add('hidden');
+        });
+
+        els.confirm.modal.classList.remove('hidden');
+    }
+
+    function editCurrentChannel() {
+         if(currentChannelId) editChannel(currentChannelId);
+    }
+
+    function editChannel(id) {
+        const channel = channels.find(c => c.id === id);
+        if(!channel) return;
+        
+        const m = document.getElementById('addChannelModal');
+        m.dataset.editing = "true";
+        document.getElementById('channelId').value = channel.id;
+        document.getElementById('inpName').value = channel.name;
+        document.getElementById('inpUrl').value = channel.url;
+        document.getElementById('inpGroup').value = channel.group || '';
+        document.getElementById('inpLogo').value = channel.logo || '';
+        document.getElementById('modalTitle').textContent = 'Edit Config';
+        document.getElementById('deleteBtnContainer').classList.remove('hidden');
+        els.urlValidationStatus.textContent = '';
+        toggleModal('addChannelModal');
+        updateLogoPreview();
+    }
+
+    function deleteChannel() {
+        const channelId = document.getElementById('channelId').value;
+        const channel = channels.find(c => c.id === channelId);
+        
+        showConfirmation(
+            'Delete Channel?',
+            `Are you sure you want to permanently remove <strong>${channel.name}</strong>?`,
+            () => {
+                channels = channels.filter(c => c.id !== channelId);
+                favorites = favorites.filter(id => id !== channelId);
+                
+                saveToLocal();
+                renderChannels();
+                toggleModal('addChannelModal');
+                
+                if(currentChannelId === channelId) stopPlayer();
+                showToast("Channel removed", "error");
+            }
+        );
+    }
+    
+    function stopPlayer() {
+         if(hls) {
+             hls.destroy();
+             hls = null;
+         }
+         video.src = "";
+         els.startScreen.style.display = 'flex';
+         els.videoContainer.classList.remove('player-active');
+         els.videoContainer.classList.remove('has-blurred-bg');
+         stopBackgroundLoop();
+         els.controlsOverlay.classList.add('ui-hidden');
+         els.error.style.display = 'none';
+         els.loading.style.display = 'none';
+         if(currentChannelId) {
+             document.getElementById(`channel-item-${currentChannelId}`)?.classList.remove('active');
+         }
+         currentChannelId = null;
+         document.title = 'SleekrStreem';
+         document.getElementById('currentChannelName').textContent = "Select Channel";
+         document.getElementById('currentChannelGroup').textContent = "--";
+         document.getElementById('editBtn').disabled = true;
+         document.getElementById('shareBtn').disabled = true;
+         document.getElementById('liveBadge').classList.add('hidden');
+         updateNetworkHealth('idle');
+         updateFavButtonState();
+    }
+
+    function retryStream() {
+        els.error.style.display = 'none';
+        if(currentChannelId) loadChannel(currentChannelId);
+    }
+
+    function showError(msg) {
+        els.loading.style.display = 'none';
+        els.error.style.display = 'flex';
+        els.errorMessage.textContent = msg;
+        updateNetworkHealth('poor');
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        const iconContainer = document.getElementById('toastIcon');
+        const icon = type === 'success' ? 'check' : 'x';
+        const color = type === 'success' ? 'brand' : 'red';
+
+        document.getElementById('toastMsg').textContent = msg;
+        iconContainer.innerHTML = `<i data-lucide="${icon}" class="text-${color}-400 w-5 h-5"></i>`;
+        iconContainer.className = `bg-${color}-500/20 p-2 rounded-full`;
+        lucide.createIcons();
+        
+        t.classList.remove('translate-y-32', 'opacity-0');
+        setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 3000);
+    }
+    
+    function importExampleChannels() {
+        const examples = [
+            { id: "nickelodeon", name: "Nickelodeon", url: "https://fl1.moveonjoy.com/NICKELODEON/index.m3u8", group: "Kids", logo: "https://i.imgur.com/E84jnP8.png" },
+            { id: "babyshark", name: "Baby Shark", url: "https://newidco-babysharktv-1-eu.rakuten.wurl.tv/playlist.m3u8", group: "Kids", logo: "https://i.imgur.com/SbBKr8L.png" },
+            { id: "disneyxd", name: "Disney XD", url: "http://fl1.moveonjoy.com/DISNEY_XD/index.m3u8", group: "Kids", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a8/2015_Disney_XD_logo.svg" },
+            { id: "comet", name: "Comet", url: "https://fast-channels.sinclairstoryline.com/COMET/index.m3u8", group: "Sci-Fi", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Comet_logo.svg/512px-Comet_logo.svg.png" }
+        ];
+        
+        let count = 0;
+        examples.forEach(ex => {
+            if(!channels.some(c => c.url === ex.url)) {
+                channels.push({...ex, id: Date.now() + Math.random().toString()});
+                count++;
+            }
+        });
+        saveToLocal();
+        renderChannels();
+        showToast(`Loaded ${count} demo channels`);
+    }
+
+    // --- CHANNEL SHARING ---
+    async function shareCurrentChannel() {
+        if (!currentChannelId) return;
+        const channel = channels.find(c => c.id === currentChannelId);
+        if (!channel) return;
+
+        // Create a clean object to share, without the internal ID
+        const shareableChannel = {
+            name: channel.name,
+            url: channel.url,
+            group: channel.group,
+            logo: channel.logo
+        };
+
+        try {
+            const jsonString = JSON.stringify(shareableChannel);
+            const base64Data = btoa(jsonString);
+            const shareUrl = `${window.location.origin}${window.location.pathname}#share=${base64Data}`;
+
+            if (navigator.share) {
+                await navigator.share({
+                    title: `Watch ${channel.name} on SleekrStreem`,
+                    text: `Check out this stream: ${channel.name}`,
+                    url: shareUrl
+                });
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                showToast("Share link copied to clipboard!");
+            }
+        } catch (err) {
+            console.error("Sharing failed:", err);
+            showToast("Could not generate share link.", "error");
+        }
+    }
+
+    function handleIncomingShareLink() {
+        if (window.location.hash.startsWith('#share=')) {
+            const base64Data = window.location.hash.substring(7); // #share= is 7 chars
+            try {
+                const jsonString = atob(base64Data);
+                const channelData = JSON.parse(jsonString);
+
+                if (channelData && channelData.name && channelData.url) {
+                    showShareConfirmation(channelData);
+                } else {
+                    showToast("Invalid share link data.", "error");
+                }
+            } catch (e) {
+                console.error("Error parsing share link:", e);
+                showToast("Could not read the share link.", "error");
+            } finally {
+                history.replaceState(null, document.title, window.location.pathname + window.location.search);
+            }
+        }
+    }
+
+    function showShareConfirmation(channelData) {
+        sharedChannelData = channelData;
+        const modal = document.getElementById('shareConfirmModal');
+        
+        document.getElementById('shareName').textContent = channelData.name || 'Unknown Channel';
+        document.getElementById('shareGroup').textContent = channelData.group || 'Uncategorized';
+        document.getElementById('shareUrl').textContent = channelData.url || 'No URL provided';
+        
+        const logoContainer = document.getElementById('shareLogo');
+        if (channelData.logo) {
+            logoContainer.innerHTML = `<img src="${channelData.logo}" class="w-full h-full object-contain p-1" draggable="false">`;
+        } else {
+            logoContainer.innerHTML = `<i data-lucide="tv" class="w-8 h-8 text-gray-500"></i>`;
+            lucide.createIcons();
+        }
+
+        document.getElementById('addSharedBtn').onclick = addSharedChannel;
+        modal.classList.remove('hidden');
+    }
+
+    function closeShareConfirm() {
+        document.getElementById('shareConfirmModal').classList.add('hidden');
+        sharedChannelData = null;
+    }
+
+    function addSharedChannel() {
+        if (!sharedChannelData) return;
+
+        if (channels.some(c => c.url === sharedChannelData.url)) {
+            showToast(`${sharedChannelData.name} is already in your list.`, 'error');
+            closeShareConfirm();
+            return;
+        }
+
+        const newChannel = {
+            id: Date.now().toString(),
+            name: sharedChannelData.name,
+            url: sharedChannelData.url,
+            group: sharedChannelData.group || 'Uncategorized',
+            logo: sharedChannelData.logo || ''
+        };
+
+        channels.push(newChannel);
+        saveToLocal();
+        renderChannels();
+        showToast(`Added "${newChannel.name}" to your list!`);
+        closeShareConfirm();
+    }
+</script>
 </body>
 </html>
