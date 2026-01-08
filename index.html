@@ -1555,15 +1555,12 @@
     }
 
     function toggleMute() {
-        video.muted = !video.muted;
-        let icon;
-        if (video.muted) {
-            icon = 'volume-x';
+        if (video.volume > 0) {
+            lastVolume = video.volume;
+            setVolume(0);
         } else {
-            icon = video.volume < 0.5 ? 'volume-1' : 'volume-2';
+            setVolume(lastVolume > 0 ? lastVolume : 1);
         }
-        document.getElementById('volIcon').setAttribute('data-lucide', icon);
-        lucide.createIcons();
     }
 
     function toggleAspect() {
