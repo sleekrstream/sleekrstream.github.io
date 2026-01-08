@@ -1753,6 +1753,9 @@
         let bufferTimeout;
         video.addEventListener('waiting', () => {
             bufferTimeout = setTimeout(() => {
+                // FIX: Do not show loader if Error screen is already visible
+                if (els.error.style.display !== 'none') return;
+
                 els.loading.style.display = 'flex';
                 els.loadingTitle.textContent = "Buffering...";
                 els.loadingStatus.textContent = "The stream is buffering due to a slow or unstable connection.";
