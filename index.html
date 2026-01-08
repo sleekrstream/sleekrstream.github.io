@@ -289,9 +289,12 @@
             <h1 class="font-bold text-xl tracking-tight text-white sidebar-text">SleekrStream</h1>
         </div>
         <div class="flex items-center gap-1 sidebar-text">
-            <button onclick="toggleModal('addChannelModal')" class="p-2 hover:bg-white/5 rounded-xl transition-all active:scale-95 text-gray-400 hover:text-white group relative" title="Add Stream">
-                <i data-lucide="plus" class="w-5 h-5"></i>
-            </button>
+            <button onclick="toggleModal('addChannelModal')" class="hidden md:block p-2 hover:bg-white/5 rounded-xl transition-all active:scale-95 text-gray-400 hover:text-white group relative" title="Add Stream">
+				<i data-lucide="plus" class="w-5 h-5"></i>
+			</button>
+			<button onclick="toggleModal('settingsModal')" class="hidden md:block p-2 hover:bg-white/5 rounded-xl transition-all active:scale-95 text-gray-400 hover:text-white group relative" title="Settings">
+				<i data-lucide="settings" class="w-5 h-5"></i>
+			</button>
             <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl md:hidden active:scale-95 transition-all">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
@@ -343,7 +346,7 @@
 <!-- Sidebar Expand Strip (Desktop) -->
 <div id="sidebarToggleStrip" class="hidden flex-col items-center justify-start py-6 w-14 border-r border-dark-border bg-dark-surface/80 z-20 gap-4 transition-all">
     <button onclick="toggleSidebar()" class="p-3 hover:bg-brand-500/10 hover:text-brand-400 rounded-xl transition-all active:scale-95" title="Expand Sidebar">
-        <i data-lucide="panel-left-open" class="w-5 h-5"></i>
+        <i data-lucide="chevron-right" class="w-5 h-5"></i>
     </button>
 </div>
 
@@ -361,6 +364,9 @@
         <div class="flex items-center gap-2">
             <button onclick="toggleModal('addChannelModal')" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl active:scale-95 transition-all">
                 <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+             <button onclick="toggleModal('settingsModal')" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl active:scale-95 transition-all">
+                <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
             <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl active:scale-95 transition-all">
                 <i data-lucide="menu" class="w-6 h-6"></i>
@@ -430,7 +436,7 @@
         </div>
 
         <!-- NEW LOCATION: Mobile Menu is now here, outside the controls overlay -->
-        <div id="mobileMenuOptions" class="absolute bottom-24 right-4 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
+        <div id="mobileMenuOptions" class="absolute bottom-20 sm:bottom-28 right-2 sm:right-6 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
             <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
                 <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
             </button>
@@ -479,7 +485,7 @@
                 <div class="flex items-center gap-1 sm:gap-1">
                     
                     <!-- Desktop-Only Tools Row -->
-                    <div class="hidden md:flex items-center gap-1">
+                    <div class="hidden lg:flex items-center gap-1">
                         <!-- Aspect Ratio -->
                         <div class="relative group/tooltip">
                             <button onclick="toggleAspect()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
@@ -523,7 +529,7 @@
                     </div>
 
                     <!-- Mobile-Only 3-Dot Menu -->
-                    <div class="md:hidden relative">
+                    <div class="lg:hidden relative">
                         <button onclick="toggleMobileMenu()" class="text-gray-300 hover:text-white hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95" id="mobileMoreBtn">
                             <i data-lucide="more-vertical" class="w-5 h-5"></i>
                         </button>
@@ -541,7 +547,7 @@
         </div>
 
         <!-- Stats Overlay -->
-        <div id="statsOverlay" class="absolute top-4 right-4 left-4 sm:left-auto glass p-5 rounded-2xl text-xs font-mono text-gray-400 hidden z-30 w-auto max-w-[calc(100vw-2rem)] sm:w-80 shadow-2xl animate-fade-in overflow-hidden">
+        <div id="statsOverlay" class="absolute top-4 right-4 left-4 sm:left-auto glass p-5 rounded-2xl text-xs font-mono text-gray-400 hidden z-30 w-auto max-w-[calc(100vw-2rem)] sm:w-80 shadow-2xl animate-fade-in no-scrollbar max-h-[calc(100%-8rem)] sm:max-h-[calc(100%-10rem)] overflow-y-auto">
             <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
                 <span class="font-bold text-white flex items-center gap-2"><i data-lucide="activity" class="w-3 h-3 text-brand-400"></i> Nerd Stats</span>
                 <button onclick="toggleStats()" class="hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition"><i data-lucide="x" class="w-3 h-3"></i></button>
@@ -625,7 +631,7 @@
 
         <div>
             <div class="flex justify-between items-center">
-                <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u8)</label>
+                <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u, .m3u8)</label>
                 <a href="https://iptv-org.github.io/" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-400 hover:text-brand-300 hover: mb-2 transition-colors pr-1 flex items-center gap-1">
                     Get links at IPTV
                     <i data-lucide="external-link" class="w-3 h-3"></i>
@@ -681,6 +687,58 @@
         </div>
     </form>
 </div>
+    </div>
+</div>
+
+<!-- MODAL: Settings -->
+<div id="settingsModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Decorative Glow -->
+        <div class="absolute top-0 left-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+
+        <div class="flex justify-between items-center mb-6 shrink-0 relative">
+            <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="settings" class="w-6 h-6 text-brand-400"></i> Settings
+            </h3>
+            <button onclick="toggleModal('settingsModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <div class="overflow-y-auto no-scrollbar relative flex-1 -mx-2 px-2 space-y-8">
+            <!-- Data Management Section -->
+            <div class="space-y-4">
+                <h4 class="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wider">Data Management</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button onclick="initiateImport()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-bg hover:bg-dark-light border border-dark-border rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-brand-400"></i>
+                        <div>
+                            <span class="font-bold">Import Playlist</span>
+                            <p class="text-xs text-gray-500">Merge from .json file</p>
+                        </div>
+                    </button>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importPlaylists(event)">
+                    
+                    <button onclick="exportPlaylists()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-bg hover:bg-dark-light border border-dark-border rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
+                        <i data-lucide="download-cloud" class="w-5 h-5 text-brand-400"></i>
+                        <div>
+                            <span class="font-bold">Export Playlist</span>
+                            <p class="text-xs text-gray-500">Save to .json file</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danger Zone Section -->
+            <div class="space-y-4 pt-4">
+                 <h4 class="text-xs font-semibold text-red-500/80 ml-1 uppercase tracking-wider">Danger Zone</h4>
+                 <div class="border border-red-500/20 bg-red-500/5 rounded-xl p-6 text-center">
+                    <h5 class="font-bold text-white">Clear All Data</h5>
+                    <p class="text-sm text-gray-400 mt-2 mb-5 leading-relaxed">This will permanently delete all your channels and favorites.</p>
+                    <button onclick="resetAllData()" class="px-6 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-white transition text-sm font-bold shadow-lg shadow-red-500/20 active:scale-95">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -745,7 +803,7 @@
 
 
 <!-- TOAST -->
-<div id="toast" class="fixed bottom-8 right-8 glass px-6 py-4 rounded-2xl shadow-2xl transform translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-50">
+<div id="toast" class="fixed top-8 left-1/2 sm:left-auto -translate-x-1/2 sm:translate-x-0 sm:right-8 w-11/12 max-w-sm sm:w-auto glass px-6 py-4 rounded-2xl shadow-2xl transform -translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-50">
     <div id="toastIcon" class="bg-brand-500/20 p-2 rounded-full"><i data-lucide="check" class="text-brand-400 w-5 h-5"></i></div>
     <div class="flex flex-col">
         <span id="toastMsg" class="font-medium text-sm tracking-wide text-white">Action successful</span>
@@ -965,6 +1023,7 @@
     function toggleMobileMenu() {
         mobileMenuOpen = !mobileMenuOpen;
         if(mobileMenuOpen) {
+            els.stats.overlay.classList.add('hidden'); // Close stats if open
             els.mobileMenuOptions.classList.remove('hidden');
             els.mobileMenuOptions.classList.add('flex');
             // Keep UI open while menu is open
@@ -973,7 +1032,7 @@
             closeMobileMenu();
         }
     }
-
+	
     function closeMobileMenu() {
         mobileMenuOpen = false;
         els.mobileMenuOptions.classList.add('hidden');
@@ -983,7 +1042,7 @@
     // --- KEYBOARD SHORTCUTS ---
     function setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.closest('#addChannelModal') || e.target.closest('#confirmModal')) return;
+             if (e.target.tagName === 'INPUT' || e.target.closest('.fixed.inset-0')) return;
 
             switch(e.code) {
                 case 'Space': e.preventDefault(); togglePlay(); break;
@@ -1007,37 +1066,60 @@
     async function verifyUrl() {
         const url = els.inpUrl.value.trim();
         const statusEl = els.urlValidationStatus;
+        statusEl.textContent = '';
         
-        if (!url) {
-            statusEl.textContent = '';
-            return;
-        }
-        
-        if (!url.endsWith('.m3u8')) {
-            statusEl.textContent = 'URL should end with .m3u8 for compatibility.';
-            statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
+        if (!url) return;
+
+        let hasValidExtension = false;
+
+        // --- Step 1: Local format and extension validation ---
+        try {
+            const parsedUrl = new URL(url);
+            if (!parsedUrl.protocol.startsWith('http')) {
+                statusEl.className = 'text-xs text-red-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.textContent = 'URL must start with http or https.';
+                return;
+            }
+            if (parsedUrl.pathname.endsWith('.m3u8') || parsedUrl.pathname.endsWith('.m3u')) {
+                hasValidExtension = true;
+            }
+        } catch (e) {
+            statusEl.className = 'text-xs text-red-500 mt-2 ml-1 h-4 transition-opacity';
+            statusEl.textContent = 'Invalid URL format.';
             return;
         }
 
-        statusEl.textContent = 'Verifying URL...';
         statusEl.className = 'text-xs text-gray-500 mt-2 ml-1 h-4 transition-opacity animate-pulse';
+        statusEl.textContent = 'Verifying URL...';
 
+        // --- Step 2: Attempt a full check to get status codes (like 404) ---
         try {
             const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
             if (response.ok) {
-                 statusEl.textContent = 'URL is valid and reachable.';
-                 statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.textContent = 'URL is valid and reachable!';
             } else {
-                 statusEl.textContent = `URL is reachable but returned status ${response.status}.`;
-                 statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.className = 'text-xs text-red-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.textContent = `Error: Server responded with status ${response.status} (e.g., Not Found).`;
             }
         } catch (error) {
-            if (error instanceof TypeError) {
-                statusEl.textContent = 'URL seems valid (CORS check).';
-                statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
-            } else {
-                statusEl.textContent = 'This URL is invalid or cannot be reached.';
+            // The request failed, most likely due to a CORS policy. This is common.
+            // --- Step 3: Fallback check for domain existence ---
+            try {
+                await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+                // If this succeeds, the domain is real but we can't get a status code.
+                // NOW, we use our knowledge of the file extension to provide the best feedback.
+                if (hasValidExtension) {
+                    statusEl.className = 'text-xs text-green-500 mt-2 ml-1 h-4 transition-opacity';
+                    statusEl.textContent = 'URL is likely a valid stream (player will confirm).';
+                } else {
+                    statusEl.className = 'text-xs text-yellow-500 mt-2 ml-1 h-4 transition-opacity';
+                    statusEl.textContent = 'Warning: No .m3u8 extension. May not be a playable stream.';
+                }
+            } catch (fallbackError) {
+                // If this *also* fails, the domain is almost certainly unreachable or non-existent.
                 statusEl.className = 'text-xs text-red-500 mt-2 ml-1 h-4 transition-opacity';
+                statusEl.textContent = 'URL is unreachable or the domain does not exist.';
             }
         } finally {
             statusEl.classList.remove('animate-pulse');
@@ -1083,10 +1165,11 @@
     }
 
     // --- SIDEBAR ---
-    function toggleSidebar() {
+        function toggleSidebar() {
         const sidebar = els.sidebar;
         const backdrop = els.sidebarBackdrop;
-        const desktopIcon = sidebar.querySelector('.hidden.md\\:block i');
+        // Use a more specific and robust selector for the desktop collapse button's icon
+        const desktopCollapseButtonIcon = sidebar.querySelector('.sidebar-text button.hidden.md\\:block:last-of-type i');
 
         if (window.innerWidth < 768) {
             // Mobile: Toggle slide-in/out
@@ -1094,11 +1177,9 @@
             if (isMobileSidebarOpen) {
                 sidebar.classList.remove('-translate-x-full');
                 backdrop.classList.remove('hidden');
-                backdrop.classList.add('opacity-100');
             } else {
                 sidebar.classList.add('-translate-x-full');
-                backdrop.classList.remove('opacity-100');
-                setTimeout(() => backdrop.classList.add('hidden'), 300); // hide after transition
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
             }
         } else {
             // Desktop: Toggle width
@@ -1106,13 +1187,13 @@
             if (isDesktopSidebarCollapsed) {
                 sidebar.style.width = '0px';
                 sidebar.classList.add('opacity-0', 'pointer-events-none');
-                desktopIcon.setAttribute('data-lucide', 'chevron-right');
+                if(desktopCollapseButtonIcon) desktopCollapseButtonIcon.setAttribute('data-lucide', 'chevron-right');
                 els.sidebarToggleStrip.classList.remove('hidden');
                 els.sidebarToggleStrip.classList.add('flex');
             } else {
                 sidebar.style.width = '340px';
                 sidebar.classList.remove('opacity-0', 'pointer-events-none');
-                desktopIcon.setAttribute('data-lucide', 'chevron-left');
+                if(desktopCollapseButtonIcon) desktopCollapseButtonIcon.setAttribute('data-lucide', 'chevron-left');
                 els.sidebarToggleStrip.classList.add('hidden');
                 els.sidebarToggleStrip.classList.remove('flex');
             }
@@ -1363,37 +1444,24 @@
             hls.attachMedia(video);
             
             hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    const failedChannelId = currentChannelId;
-                    const failedChannelName = channel.name;
-                    
-                    switch (data.details) {
-                        case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
-                        case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
-                            hls.destroy();
-                            stopPlayer();
-                            showConfirmation(
-                                'Invalid Stream URL',
-                                `The stream for "<strong>${failedChannelName}</strong>" failed to load. The URL appears to be invalid. Would you like to remove this channel?`,
-                                () => {
-                                    channels = channels.filter(c => c.id !== failedChannelId);
-                                    favorites = favorites.filter(fid => fid !== failedChannelId);
-                                    saveToLocal();
-                                    renderChannels();
-                                    showToast(`Removed broken channel: ${failedChannelName}`, 'error');
-                                }
-                            );
-                            break;
+                console.error('HLS.js error:', data.details, 'Fatal:', data.fatal);
 
+                if (data.fatal) {
+                    const failedChannelName = channel ? channel.name : 'the stream';
+
+                    switch (data.details) {
+                        // These errors are often recoverable or temporary network issues.
                         case Hls.ErrorDetails.NETWORK_ERROR:
+                            console.log('Network error, attempting to recover...');
                             els.loading.style.display = 'flex';
                             els.loadingTitle.textContent = 'Reconnecting...';
                             els.loadingStatus.textContent = 'Network connection lost. Attempting to reconnect.';
                             updateNetworkHealth('poor');
-                            hls.startLoad();
+                            hls.startLoad(); // Try to restart loading
                             break;
 
                         case Hls.ErrorDetails.MEDIA_ERROR:
+                            console.log('Media error, attempting to recover...');
                             els.loading.style.display = 'flex';
                             els.loadingTitle.textContent = 'Recovering Stream...';
                             els.loadingStatus.textContent = 'A media error occurred. Attempting to recover.';
@@ -1401,9 +1469,16 @@
                             hls.recoverMediaError();
                             break;
 
+                        // These errors are definitive failures.
+                        // MANIFEST_LOAD_ERROR means the URL failed (e.g., 404).
+                        // MANIFEST_PARSING_ERROR means the URL works, but the file is not a valid stream.
+                        case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
+                        case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
                         default:
+                            console.log('Fatal stream error, stopping player.');
                             hls.destroy();
-                            showError(`An unexpected error occurred. The stream for "${failedChannelName}" may be offline or incompatible.`);
+                            // This is the most accurate error message we can show.
+                            showError(`Could not play "${failedChannelName}". The URL may be incorrect, the stream may be offline, or the file is not a valid video stream.`);
                             break;
                     }
                 }
@@ -1557,7 +1632,12 @@
 
     // --- STATS & EVENTS ---
     function toggleStats() {
-        els.stats.overlay.classList.toggle('hidden');
+        if (els.stats.overlay.classList.contains('hidden')) {
+            closeMobileMenu(); // Close mobile menu if open
+            els.stats.overlay.classList.remove('hidden');
+        } else {
+            els.stats.overlay.classList.add('hidden');
+        }
     }
 
     function setupPlayerEvents() {
@@ -1747,13 +1827,13 @@
         const color = type === 'success' ? 'brand' : 'red';
 
         document.getElementById('toastMsg').textContent = msg;
-        iconContainer.innerHTML = `<i data-lucide="${icon}" class="text-${color}-400 w-5 h-5"></i>`;
-        iconContainer.className = `bg-${color}-500/20 p-2 rounded-full`;
-        lucide.createIcons();
-        
-        t.classList.remove('translate-y-32', 'opacity-0');
-        setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 3000);
-    }
+		iconContainer.innerHTML = `<i data-lucide="${icon}" class="text-${color}-400 w-5 h-5"></i>`;
+		iconContainer.className = `bg-${color}-500/20 p-2 rounded-full`;
+		lucide.createIcons();
+		
+		t.classList.remove('-translate-y-32', 'opacity-0');
+		setTimeout(() => t.classList.add('-translate-y-32', 'opacity-0'), 3000);
+	}
     
     function importExampleChannels() {
         const examples = [
@@ -1884,6 +1964,93 @@
         showToast(`Added "${newChannel.name}" to your list!`);
         closeShareConfirm();
     }
+    
+    // --- DATA MANAGEMENT ---
+    function exportPlaylists() {
+        const data = {
+            channels: channels,
+            favorites: favorites
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sleekrstream_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Playlist exported successfully!');
+    }
+
+    function initiateImport() {
+        document.getElementById('importFile').click();
+    }
+
+    function importPlaylists(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!data.channels || !Array.isArray(data.channels)) {
+                    throw new Error('Invalid file format: "channels" array not found.');
+                }
+                
+                const existingUrls = new Set(channels.map(c => c.url));
+                let importedCount = 0;
+
+                data.channels.forEach(newChannel => {
+                    if (newChannel.url && !existingUrls.has(newChannel.url)) {
+                        channels.push({
+                            id: newChannel.id || Date.now().toString() + Math.random(),
+                            name: newChannel.name,
+                            url: newChannel.url,
+                            group: newChannel.group,
+                            logo: newChannel.logo
+                        });
+                        existingUrls.add(newChannel.url);
+                        importedCount++;
+                    }
+                });
+
+                if (data.favorites && Array.isArray(data.favorites)) {
+                    const favSet = new Set([...favorites, ...data.favorites]);
+                    favorites = Array.from(favSet);
+                }
+
+                saveToLocal();
+                renderChannels();
+                showToast(`Successfully merged ${importedCount} new channels.`);
+
+            } catch (error) {
+                showToast(`Import failed: ${error.message}`, 'error');
+            } finally {
+                // Reset file input to allow importing the same file again
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+    
+    function resetAllData() {
+        showConfirmation(
+            'Reset All Data?',
+            'This is irreversible. All your channels and favorites will be permanently deleted. Are you absolutely sure?',
+            () => {
+                channels = [];
+                favorites = [];
+                stopPlayer();
+                saveToLocal();
+                renderChannels();
+                toggleModal('settingsModal');
+                showToast("All data has been cleared", "error");
+            }
+        );
+    }
+
 </script>
 </body>
 </html>
