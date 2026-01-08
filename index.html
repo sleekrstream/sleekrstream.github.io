@@ -436,7 +436,7 @@
         </div>
 
         <!-- NEW LOCATION: Mobile Menu is now here, outside the controls overlay -->
-        <div id="mobileMenuOptions" class="absolute bottom-20 sm:bottom-28 right-2 sm:right-6 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
+        <div id="mobileMenuOptions" class="absolute bottom-20 sm:bottom-28 right-2 sm:right-6 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu overflow-y-auto no-scrollbar max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-13rem)]">
             <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
                 <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
             </button>
