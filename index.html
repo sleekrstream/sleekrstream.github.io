@@ -283,7 +283,7 @@
     <!-- Header -->
     <div class="p-5 border-b border-dark-border flex justify-between items-center bg-dark-surface/50 shrink-0">
         <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-            <div class="bg-gradient-to-br from-brand-600 to-brand-400 text-white p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+            <div class="bg-gradient-to-br from-brand-600 to-brand-400 text-white p-2.5 rounded-xl">
                 <i data-lucide="zap" class="w-5 h-5"></i>
             </div>
             <h1 class="font-bold text-xl tracking-tight text-white sidebar-text">SleekrStream</h1>
@@ -332,7 +332,7 @@
     <!-- Sidebar Footer -->
     <div class="p-4 border-t border-dark-border text-xs text-gray-500 shrink-0 sidebar-content bg-dark-surface/50">
         <div class="flex justify-between items-center">
-            <button onclick="importExampleChannels()" class="hover:text-brand-400 transition-colors flex items-center gap-1.5 hover:underline decoration-brand-400/50">
+            <button onclick="importExampleChannels()" class="hover:text-brand-400 transition-colors flex items-center gap-1.5 hover: decoration-brand-400/50">
                 <i data-lucide="download-cloud" class="w-3 h-3"></i> Load Demo
             </button>
             <span id="channelCount" class="font-mono text-gray-600">0 loaded</span>
@@ -430,7 +430,7 @@
         </div>
 
         <!-- NEW LOCATION: Mobile Menu is now here, outside the controls overlay -->
-        <div id="mobileMenuOptions" class="absolute bottom-24 right-4 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/50 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
+        <div id="mobileMenuOptions" class="absolute bottom-24 right-4 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu">
             <button onclick="toggleAspect(); closeMobileMenu()" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
                 <i data-lucide="scan" class="w-4 h-4 text-brand-400"></i> Aspect Ratio
             </button>
@@ -626,7 +626,7 @@
         <div>
             <div class="flex justify-between items-center">
                 <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u8)</label>
-                <a href="https://iptv-org.github.io/" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-400 hover:text-brand-300 hover:underline mb-2 transition-colors pr-1 flex items-center gap-1">
+                <a href="https://iptv-org.github.io/" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-400 hover:text-brand-300 hover: mb-2 transition-colors pr-1 flex items-center gap-1">
                     Get links at IPTV
                     <i data-lucide="external-link" class="w-3 h-3"></i>
                 </a>
@@ -1763,7 +1763,7 @@
             { id: "gameshownetwork", name: "Game Show Network", url: "https://a-cdn.klowdtv.com/live2/gsn_720p/playlist.m3u8", group: "Kids", logo: "https://www.gameshownetwork.com/storage/app/media/2020/Navigation/gsn_logo.jpg" },
             { id: "disneychannel", name: "Disney Channel", url: "https://fl31.moveonjoy.com/DISNEY/index.m3u8", group: "Kids", logo: "https://upload.wikimedia.org/wikipedia/commons/3/3d/2022_Disney_Channel_logo.svg" },
             { id: "cbs", name: "CBS", url: "https://fl1.moveonjoy.com/CBS_News/index.m3u8", group: "General", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/CBS_logo_%282020%29.svg/512px-CBS_logo_%282020%29.svg.png" },
-            { id: "e!", name: "E! Entertainment", url: "https://fl1.moveonjoy.com/E_ENTERTAINMENT_TELEVISION/index.m3u8", group: "Entertainment", logo: "https://i.imgur.com/TWFDkap.png" },
+            { id: "e!", name: "E! Entertainment", url: "https://fl1.moveonjoy.com/E_ENTERTAINMENT_TELEVISION/index.m3u8", group: "Entertainment", logo: "https://images.seeklogo.com/logo-png/20/2/e-entertainment-logo-png_seeklogo-209325.png" },
             { id: "babyshark", name: "Baby Shark", url: "https://newidco-babysharktv-1-eu.rakuten.wurl.tv/playlist.m3u8", group: "Kids", logo: "https://i.imgur.com/SbBKr8L.png" },
             { id: "disneyxd", name: "Disney XD", url: "http://fl1.moveonjoy.com/DISNEY_XD/index.m3u8", group: "Kids", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a8/2015_Disney_XD_logo.svg" },
             { id: "comet", name: "Comet", url: "https://fast-channels.sinclairstoryline.com/COMET/index.m3u8", group: "Sci-Fi", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Comet_logo.svg/512px-Comet_logo.svg.png" }
