@@ -325,6 +325,15 @@
         background: linear-gradient(90deg, #4f46e5, #818cf8);
         transition: width 0.3s ease;
     }
+
+    /* Fullscreen Channel Menu */
+    #fullscreenChannelMenu {
+        transform: translateX(-100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #fullscreenChannelMenu.open {
+        transform: translateX(0);
+    }
 </style>
 </head>
 <body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-row antialiased selection:bg-brand-500 selection:text-white">
@@ -446,20 +455,36 @@
         <video id="videoPlayer" class="relative z-10 w-full h-full object-contain transition-all duration-300" playsinline crossorigin="anonymous"></video>
 
         <!-- PREV/NEXT BUTTONS -->
-        <button id="prevChannelBtn" class="hidden absolute top-1/2 -translate-y-1/2 left-4 sm:left-6 w-11 h-11 sm:w-12 sm:h-12 glass rounded-full flex items-center justify-center z-20 ui-element ui-hidden hover:bg-white/20 active:scale-90 transition-all">
+        <button id="prevChannelBtn" class="absolute top-1/2 -translate-y-1/2 left-4 sm:left-6 w-11 h-11 sm:w-12 sm:h-12 glass rounded-full flex items-center justify-center z-20 ui-element ui-hidden hover:bg-white/20 active:scale-90 transition-all">
             <i data-lucide="chevron-left" class="w-6 h-6"></i>
         </button>
-        <button id="nextChannelBtn" class="hidden absolute top-1/2 -translate-y-1/2 right-4 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 glass rounded-full flex items-center justify-center z-20 ui-element ui-hidden hover:bg-white/20 active:scale-90 transition-all">
+        <button id="nextChannelBtn" class="absolute top-1/2 -translate-y-1/2 right-4 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 glass rounded-full flex items-center justify-center z-20 ui-element ui-hidden hover:bg-white/20 active:scale-90 transition-all">
             <i data-lucide="chevron-right" class="w-6 h-6"></i>
         </button>
 
         <!-- Fullscreen Info -->
-        <div id="fullscreenInfo" class="absolute top-6 left-6 z-20 p-3 hidden items-center gap-4 glass rounded-[24px] ui-element">
+        <div id="fullscreenInfo" class="absolute top-6 left-6 z-30 p-3 hidden items-center gap-2 glass rounded-[24px] ui-element">
             <div id="fullscreenChannelLogo" class="w-12 h-12 bg-dark-border rounded-lg flex items-center justify-center border border-white/10 overflow-hidden shrink-0">
                 <i data-lucide="tv" class="w-6 h-6 opacity-80"></i>
             </div>
-            <div>
+            <div class="pr-2">
                 <h2 id="fullscreenChannelName" class="text-lg font-bold text-white">Select Channel</h2>
+            </div>
+            <button onclick="toggleFullscreenMenu()" class="p-3 rounded-lg hover:bg-white/10 transition-colors">
+                <i data-lucide="list" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Fullscreen Channel Menu -->
+        <div id="fullscreenChannelMenu" class="absolute top-0 left-0 max-h-[55vh] w-full max-w-xs sm:max-w-sm glass z-40 flex flex-col rounded-br-3xl">
+            <div class="p-4 flex justify-between items-center border-b border-white/10 shrink-0">
+                <h3 class="font-bold text-white text-lg">All Channels</h3>
+                <button onclick="toggleFullscreenMenu()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="fullscreenChannelList" class="flex-1 overflow-y-auto p-2 space-y-1 no-scrollbar">
+                <!-- Fullscreen channel list is populated here -->
             </div>
         </div>
 
@@ -502,6 +527,7 @@
             <div class="mt-8 gap-4 text-xs text-gray-500 font-mono hidden sm:flex">
                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">SPACE</kbd> Play/Pause</span>
                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">F</kbd> Fullscreen</span>
+                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">←</kbd><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">→</kbd> Change Channel</span>
             </div>
         </div>
 
@@ -907,6 +933,7 @@
     let animationFrameId = null;
     let sharedChannelData = null; 
     let importWorker = null;
+    let isFullscreenMenuOpen = false;
 
     // Mobile specific interaction state
     let isTouchInteraction = false;
@@ -944,6 +971,8 @@
         fullscreenInfo: document.getElementById('fullscreenInfo'),
         fullscreenChannelLogo: document.getElementById('fullscreenChannelLogo'),
         fullscreenChannelName: document.getElementById('fullscreenChannelName'),
+        fullscreenMenu: document.getElementById('fullscreenChannelMenu'),
+        fullscreenMenuList: document.getElementById('fullscreenChannelList'),
         prevChannelBtn: document.getElementById('prevChannelBtn'),
         nextChannelBtn: document.getElementById('nextChannelBtn'),
         confirm: {
@@ -1010,6 +1039,7 @@
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
+                if (isFullscreenMenuOpen) toggleFullscreenMenu(); // Close menu on exiting fullscreen
                 lucide.createIcons();
             }
         });
@@ -1070,7 +1100,7 @@
         }
 
         function hideUI() {
-            if (video.paused || mobileMenuOpen) return;
+            if (video.paused || mobileMenuOpen || isFullscreenMenuOpen) return;
             // Select all UI elements that should auto-hide
             document.querySelectorAll('.ui-element').forEach(el => el.classList.add('ui-hidden'));
             // Also close menu if UI hides
@@ -1099,7 +1129,7 @@
         // We use 'click' on the container, but we check if it was a touch event flag
         els.videoContainer.addEventListener('click', (e) => {
             // Don't toggle if clicking actual controls or the new nav buttons
-            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions') || e.target.closest('#prevChannelBtn') || e.target.closest('#nextChannelBtn')) return;
+            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions') || e.target.closest('#prevChannelBtn') || e.target.closest('#nextChannelBtn') || e.target.closest('#fullscreenChannelMenu')) return;
 
             if (isTouchInteraction) {
                 if (els.controlsOverlay.classList.contains('ui-hidden')) {
@@ -1165,7 +1195,8 @@
     // --- KEYBOARD SHORTCUTS ---
     function setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-             if (e.target.tagName === 'INPUT' || e.target.closest('.fixed.inset-0')) return;
+             // Ignore shortcuts if an input is focused or a modal is open
+             if (e.target.tagName === 'INPUT' || document.querySelector('.fixed.inset-0:not(.hidden)')) return;
 
             switch(e.code) {
                 case 'Space': e.preventDefault(); togglePlay(); break;
@@ -1475,6 +1506,13 @@
             document.getElementById(`channel-item-${currentChannelId}`)?.classList.remove('active');
         }
         document.getElementById(`channel-item-${id}`)?.classList.add('active');
+        
+        // Also update fullscreen menu active state
+        const fsActiveOld = document.querySelector('.fs-channel-item.active');
+        if(fsActiveOld) fsActiveOld.classList.remove('active');
+        const fsActiveNew = document.getElementById(`fs-channel-item-${id}`);
+        if(fsActiveNew) fsActiveNew.classList.add('active');
+
 
         currentChannelId = id;
         document.title = `SleekrStream • ${channel.name}`;
@@ -1487,8 +1525,6 @@
         els.startScreen.style.display = 'none';
         els.error.style.display = 'none';
         els.videoContainer.classList.add('player-active');
-        els.prevChannelBtn.classList.remove('hidden');
-        els.nextChannelBtn.classList.remove('hidden');
         
         const aspectMode = aspectModes[currentAspectIndex];
         if (aspectMode === 'contain') {
@@ -1742,6 +1778,42 @@
         showToast("Snapshot saved");
     }
 
+    // --- FULLSCREEN MENU ---
+    function toggleFullscreenMenu() {
+        isFullscreenMenuOpen = !isFullscreenMenuOpen;
+        if (isFullscreenMenuOpen) {
+            populateFullscreenMenu();
+            els.fullscreenMenu.classList.add('open');
+            // Prevent UI from hiding while menu is open
+            clearTimeout(inactivityTimer);
+        } else {
+            els.fullscreenMenu.classList.remove('open');
+        }
+    }
+
+    function populateFullscreenMenu() {
+        const currentList = getCurrentChannelList();
+        els.fullscreenMenuList.innerHTML = currentList.map(c => {
+            const isActive = c.id === currentChannelId;
+            const group = c.group || 'Uncategorized';
+            return `
+                <div id="fs-channel-item-${c.id}" 
+                     onclick="loadChannel('${c.id}'); toggleFullscreenMenu();"
+                     class="fs-channel-item flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-white/10 transition-colors ${isActive ? 'active bg-brand-500/10' : ''}">
+                    <div class="w-10 h-10 rounded-md bg-dark-border flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5">
+                        ${c.logo ? `<img src="${c.logo}" class="w-full h-full object-contain p-0.5" draggable="false">` : '<i data-lucide="tv" class="w-5 h-5 text-gray-500"></i>'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-white truncate text-sm">${c.name}</h4>
+                        <p class="text-xs text-gray-400 truncate">${group}</p>
+                    </div>
+                    ${isActive ? '<i data-lucide="play-circle" class="w-5 h-5 text-brand-400 shrink-0"></i>' : ''}
+                </div>
+            `;
+        }).join('');
+        lucide.createIcons();
+    }
+
     // --- CAPTIONS & AUDIO TRACKS ---
     function toggleCaptions() {
         isCaptionsOn = !isCaptionsOn;
@@ -1966,8 +2038,6 @@
          els.controlsOverlay.classList.add('ui-hidden');
          els.error.style.display = 'none';
          els.loading.style.display = 'none';
-         els.prevChannelBtn.classList.add('hidden');
-         els.nextChannelBtn.classList.add('hidden');
          if(currentChannelId) {
              document.getElementById(`channel-item-${currentChannelId}`)?.classList.remove('active');
          }
