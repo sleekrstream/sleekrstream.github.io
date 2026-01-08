@@ -312,26 +312,6 @@
         background: linear-gradient(90deg, #4f46e5, #818cf8);
         transition: width 0.3s ease;
     }
-
-    @media (max-width: 767px) and (orientation: landscape) {
-        .sidebar-transition {
-            width: 280px !important;
-        }
-        .info-bar h2 {
-            font-size: 1rem;
-        }
-        .controls-wrapper {
-            padding: 0.5rem;
-        }
-        #fullscreenInfo {
-            top: 1rem;
-            left: 1rem;
-            padding: 0.5rem;
-        }
-        #fullscreenChannelName {
-            font-size: 1rem;
-        }
-    }
 </style>
 </head>
 <body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-row antialiased selection:bg-brand-500 selection:text-white">
@@ -453,15 +433,12 @@
         <video id="videoPlayer" class="relative z-10 w-full h-full object-contain transition-all duration-300" playsinline crossorigin="anonymous"></video>
 
         <!-- Fullscreen Info -->
-        <div id="fullscreenInfo" class="absolute top-6 left-6 z-20 p-3 hidden items-center gap-4 glass rounded-[24px] ui-element" onclick="toggleFullscreenChannelMenu()">
+        <div id="fullscreenInfo" class="absolute top-6 left-6 z-20 p-3 hidden items-center gap-4 glass rounded-[24px] ui-element">
             <div id="fullscreenChannelLogo" class="w-12 h-12 bg-dark-border rounded-lg flex items-center justify-center border border-white/10 overflow-hidden shrink-0">
                 <i data-lucide="tv" class="w-6 h-6 opacity-80"></i>
             </div>
             <div>
                 <h2 id="fullscreenChannelName" class="text-lg font-bold text-white">Select Channel</h2>
-            </div>
-            <div id="fullscreenChannelMenu" class="absolute top-full left-0 mt-2 w-64 bg-dark-surface/80 backdrop-blur-lg border border-dark-border rounded-lg shadow-lg max-h-60 overflow-y-auto no-scrollbar hidden">
-                <!-- Channel list will be injected here -->
             </div>
         </div>
 
@@ -504,7 +481,6 @@
             <div class="mt-8 gap-4 text-xs text-gray-500 font-mono hidden sm:flex">
                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">SPACE</kbd> Play/Pause</span>
                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">F</kbd> Fullscreen</span>
-                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">↑/↓</kbd> Next/Prev</span>
             </div>
         </div>
 
@@ -542,12 +518,6 @@
 
                 <!-- Right Controls -->
                 <div class="flex items-center gap-1 sm:gap-1">
-                    <button onclick="playPreviousChannel()" class="text-white hover:text-brand-400 transition p-2.5 rounded-lg active:scale-95">
-                        <i data-lucide="skip-back" class="w-5 h-5"></i>
-                    </button>
-                    <button onclick="playNextChannel()" class="text-white hover:text-brand-400 transition p-2.5 rounded-lg active:scale-95">
-                        <i data-lucide="skip-forward" class="w-5 h-5"></i>
-                    </button>
                     
                     <!-- Desktop-Only Tools Row -->
                     <div class="hidden lg:flex items-center gap-1" id="desktopControls">
@@ -953,7 +923,6 @@
         fullscreenInfo: document.getElementById('fullscreenInfo'),
         fullscreenChannelLogo: document.getElementById('fullscreenChannelLogo'),
         fullscreenChannelName: document.getElementById('fullscreenChannelName'),
-        fullscreenChannelMenu: document.getElementById('fullscreenChannelMenu'),
         confirm: {
             modal: document.getElementById('confirmModal'),
             title: document.getElementById('confirmTitle'),
@@ -1018,7 +987,6 @@
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
-                 els.fullscreenChannelMenu.classList.add('hidden');
                 lucide.createIcons();
             }
         });
@@ -1106,7 +1074,7 @@
         // We use 'click' on the container, but we check if it was a touch event flag
         els.videoContainer.addEventListener('click', (e) => {
             // Don't toggle if clicking actual controls
-            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions') || e.target.closest('#fullscreenChannelMenu')) return;
+            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions')) return;
 
             if (isTouchInteraction) {
                 if (els.controlsOverlay.classList.contains('ui-hidden')) {
@@ -1178,8 +1146,8 @@
                 case 'Space': e.preventDefault(); togglePlay(); break;
                 case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
                 case 'KeyM': toggleMute(); break;
-                case 'ArrowUp': e.preventDefault(); playPreviousChannel(); break;
-                case 'ArrowDown': e.preventDefault(); playNextChannel(); break;
+                case 'ArrowUp': e.preventDefault(); setVolume(Math.min(1, video.volume + 0.1)); break;
+                case 'ArrowDown': e.preventDefault(); setVolume(Math.max(0, video.volume - 0.1)); break;
             }
         });
     }
@@ -1712,34 +1680,6 @@
         link.href = canvas.toDataURL();
         link.click();
         showToast("Snapshot saved");
-    }
-
-    function playNextChannel() {
-        if (channels.length === 0) return;
-        const currentIndex = channels.findIndex(c => c.id === currentChannelId);
-        const nextIndex = (currentIndex + 1) % channels.length;
-        loadChannel(channels[nextIndex].id);
-    }
-
-    function playPreviousChannel() {
-        if (channels.length === 0) return;
-        const currentIndex = channels.findIndex(c => c.id === currentChannelId);
-        const prevIndex = (currentIndex - 1 + channels.length) % channels.length;
-        loadChannel(channels[prevIndex].id);
-    }
-
-    function toggleFullscreenChannelMenu() {
-        const menu = els.fullscreenChannelMenu;
-        if (menu.classList.contains('hidden')) {
-            let channelListHtml = '';
-            channels.forEach(channel => {
-                channelListHtml += `<div class="p-2 hover:bg-dark-light cursor-pointer" onclick="loadChannel('${channel.id}')">${channel.name}</div>`;
-            });
-            menu.innerHTML = channelListHtml;
-            menu.classList.remove('hidden');
-        } else {
-            menu.classList.add('hidden');
-        }
     }
 
     // --- CAPTIONS & AUDIO TRACKS ---
