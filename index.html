@@ -1775,6 +1775,11 @@
         const channel = channels.find(c => c.id === id);
         if (!channel || (id === currentChannelId && hls)) return;
 
+        // --- NEW: Reset Caption State ---
+        // Ensure state is clean before the new stream loads
+        isCaptionsOn = false; 
+        // --------------------------------
+
         if (window.innerWidth < 768 && isMobileSidebarOpen) {
             toggleSidebar();
         }
@@ -1845,9 +1850,11 @@
                 video.play().catch(() => {});
                 
                 // Listen for any text tracks (including embedded) being added.
+                // This updates the button if captions appear shortly after load.
                 video.textTracks.onaddtrack = () => {
-                    buildPlayerControls(); // Rebuild controls to show the button
-                    toggleCaptions(isCaptionsOn, true); // Set initial state
+                    buildPlayerControls(); // Rebuild controls to enable the button
+                    // Optional: Restore previous state if you wanted persistence
+                    // toggleCaptions(isCaptionsOn, true); 
                 };
 
                 buildPlayerControls(); // Build once initially
@@ -1919,34 +1926,39 @@
 
     // --- CONTROLS ---
     function buildPlayerControls() {
-        // 1. Precise Capability Check
-        // We filter native tracks to ignore 'metadata' (id3 tags) and only count actual subtitles/captions.
+        // 1. Determine if Captions are actually available
         let hasCaptions = false;
-        
-        // Check HLS engine tracks (most reliable for non-Safari)
-        if (hls && hls.subtitleTracks && hls.subtitleTracks.length > 0) {
-            hasCaptions = true;
-        } 
-        // Check Native tracks (Safari or native HLS)
-        else if (video.textTracks && video.textTracks.length > 0) {
-            for (let i = 0; i < video.textTracks.length; i++) {
-                const kind = video.textTracks[i].kind;
-                // Only accept actual subtitle/caption tracks
-                if (kind === 'subtitles' || kind === 'captions') {
-                    hasCaptions = true;
-                    break;
-                }
-            }
+        if (hls) {
+            // If using HLS.js, it's the single source of truth for tracks.
+            // This avoids issues with stale native tracks from previous streams.
+            hasCaptions = hls.subtitleTracks && hls.subtitleTracks.length > 0;
+        } else {
+            // For native playback (e.g., Safari), check the video element's tracks.
+            hasCaptions = video.textTracks && video.textTracks.length > 0;
         }
 
-        const hasAudioTracks = hls && hls.audioTracks.length > 1;
+        // 2. Determine if Audio Tracks are available
+        const hasAudioTracks = hls && hls.audioTracks && hls.audioTracks.length > 1;
+
+        // 3. Safety Check: If we think captions are ON, but the channel has none, force OFF.
+        if (isCaptionsOn && !hasCaptions) {
+            isCaptionsOn = false;
+            // We manually ensure HLS engine is off if it was previously on
+            if(hls) hls.subtitleDisplay = false; 
+        }
 
         const controls = [
             { id: 'audio', icon: 'audio-lines', label: 'Audio', visible: hasAudioTracks, onClick: 'showAudioTrackMenu()' },
             { id: 'aspect', icon: 'scan', label: 'Aspect Ratio', visible: true, onClick: 'toggleAspect()' },
             { id: 'snapshot', icon: 'camera', label: 'Snapshot', visible: true, onClick: 'takeSnapshot()' },
-            // Visible is now strictly bound to the filtered 'hasCaptions'
-            { id: 'captions', icon: 'subtitles', label: 'Captions', visible: hasCaptions, onClick: 'toggleCaptions()' },
+            { 
+                id: 'captions', 
+                icon: 'subtitles', 
+                label: 'Captions', 
+                visible: true, // Always render, but control via 'disabled' prop
+                disabled: !hasCaptions, // Disable if no tracks found
+                onClick: 'toggleCaptions()' 
+            },
             { id: 'pip', icon: 'picture-in-picture-2', label: 'PiP', visible: true, onClick: 'togglePiP()' },
             { id: 'stats', icon: 'bar-chart-2', label: 'Stats', visible: true, onClick: 'toggleStats()' },
         ];
@@ -1956,25 +1968,45 @@
         
         controls.forEach(c => {
             if (c.visible) {
-                // Logic: Default is Gray -> White on Hover.
-                // Active (Captions On) is Purple -> Light Purple on Hover.
+                // Determine styling based on State AND Availability
                 let colorClasses = 'text-gray-300 hover:text-white'; 
                 
-                if (c.id === 'captions' && isCaptionsOn) {
+                // If active and enabled, show brand color
+                if (c.id === 'captions' && isCaptionsOn && !c.disabled) {
                     colorClasses = 'text-brand-400 hover:text-brand-300';
                 }
 
+                // Interaction classes
+                // If disabled: low opacity, no pointer events (unclickable), not-allowed cursor
+                const interactionClasses = c.disabled 
+                    ? 'opacity-30 cursor-not-allowed pointer-events-none' 
+                    : 'hover:bg-white/10 active:scale-95';
+
+                // Desktop Button Construction
                  desktopHTML += `
                     <div class="relative group/tooltip" id="desktop-btn-${c.id}-container">
-                        <button onclick="${c.onClick}" id="desktop-btn-${c.id}" class="${colorClasses} hover:bg-white/10 p-2.5 rounded-lg transition active:scale-95">
+                        <button 
+                            onclick="${c.disabled ? '' : c.onClick}" 
+                            id="desktop-btn-${c.id}" 
+                            ${c.disabled ? 'disabled' : ''}
+                            class="${colorClasses} ${interactionClasses} p-2.5 rounded-lg transition"
+                        >
                             <i data-lucide="${c.icon}" class="w-5 h-5"></i>
                         </button>
-                        <span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">${c.label}</span>
+                        ${!c.disabled ? `<span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">${c.label}</span>` : ''}
                     </div>`;
                 
+                // Mobile Button Construction
+                // We also hide disabled items from mobile menu to save space, or disable them. 
+                // Here we disable them to maintain consistency.
                 mobileHTML += `
-                     <button onclick="${c.onClick}; closeMobileMenu()" id="mobile-btn-${c.id}" class="w-full text-left flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm text-gray-200">
-                        <i data-lucide="${c.icon}" class="w-4 h-4 text-brand-400"></i> ${c.label}
+                     <button 
+                        onclick="${c.disabled ? '' : c.onClick + '; closeMobileMenu()'}" 
+                        id="mobile-btn-${c.id}" 
+                        ${c.disabled ? 'disabled' : ''}
+                        class="w-full text-left flex items-center gap-3 p-3 rounded-xl transition text-sm text-gray-200 ${c.disabled ? 'opacity-30' : 'hover:bg-white/10'}"
+                    >
+                        <i data-lucide="${c.icon}" class="w-4 h-4 ${c.id === 'captions' && isCaptionsOn && !c.disabled ? 'text-brand-400' : (c.disabled ? 'text-gray-500' : 'text-brand-400')}"></i> ${c.label}
                     </button>`;
             }
         });
@@ -2114,11 +2146,31 @@
     // --- CAPTIONS & AUDIO TRACKS ---
     
     function toggleCaptions(forceState, silent = false) {
+        // --- NEW: Strict Availability Check ---
+        const hlsSubs = (hls && hls.subtitleTracks && hls.subtitleTracks.length > 0);
+        const nativeSubs = (video.textTracks && video.textTracks.length > 0);
+        
+        // If no captions exist, force OFF and Return. Do not allow toggle.
+        if (!hlsSubs && !nativeSubs) {
+            isCaptionsOn = false;
+            // Update UI to reflect disabled state (remove purple colors)
+            const desktopBtn = document.getElementById('desktop-btn-captions');
+            const mobileBtn = document.getElementById('mobile-btn-captions');
+            if (desktopBtn) {
+                desktopBtn.classList.remove('text-brand-400', 'hover:text-brand-300');
+                desktopBtn.classList.add('text-gray-300', 'hover:text-white');
+            }
+            if (mobileBtn) mobileBtn.classList.remove('text-brand-400');
+            return; 
+        }
+        // -------------------------------------
+
         if (typeof forceState === 'boolean') {
             isCaptionsOn = forceState;
         } else {
             isCaptionsOn = !isCaptionsOn;
         }
+       
         
         // Manage Native Tracks
         for (let i = 0; i < video.textTracks.length; i++) {
