@@ -350,6 +350,12 @@
         background-color: rgba(99, 102, 241, 0.1);
     }
 
+    /* Custom Caption Transition */
+    .caption-transition {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+	
+
 </style>
 </head>
 <body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-row antialiased selection:bg-brand-500 selection:text-white">
@@ -472,6 +478,11 @@
         
         <!-- Video Element -->
         <video id="videoPlayer" class="relative z-10 w-full h-full object-contain transition-all duration-300" playsinline crossorigin="anonymous"></video>
+        
+        <!-- Custom Captions Overlay -->
+        <div id="captionOverlay" class="absolute bottom-[20%] sm:bottom-28 left-1/2 -translate-x-1/2 z-10 glass bg-dark-surface/60 rounded-xl px-6 py-3 text-center max-w-[90%] sm:max-w-3xl hidden caption-transition pointer-events-none transform-gpu shadow-lg border border-white/10">
+            <p id="captionText" class="text-white font-medium text-base sm:text-lg md:text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-relaxed"></p>
+        </div>
 
         <!-- PREV/NEXT BUTTONS -->
         <button id="prevChannelBtn" class="absolute top-1/2 -translate-y-1/2 left-4 sm:left-6 w-11 h-11 sm:w-12 sm:h-12 glass rounded-full flex items-center justify-center z-20 ui-element ui-hidden hover:bg-white/20 active:scale-90 transition-all">
@@ -532,22 +543,31 @@
         </div>
 
         <!-- Start Screen -->
-        <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center z-0 p-4">
+        <div id="startScreen" class="absolute inset-0 flex flex-col items-center justify-center z-0 p-6 overflow-hidden">
              <div class="absolute inset-0 bg-gradient-to-br from-dark-bg to-[#050505]"></div>
-            <div class="relative mb-10 group cursor-pointer" onclick="toggleModal('addChannelModal')">
-                <div class="absolute -inset-2 bg-brand-500 blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-700 rounded-full animate-pulse-slow"></div>
-                <div class="relative w-28 h-28 bg-dark-surface rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/5 group-hover:scale-105 group-active:scale-95 transition-transform duration-500 ease-out">
-                    <i data-lucide="zap" class="w-12 h-12 text-brand-400"></i>
+            
+            <!-- Logo Section -->
+            <div class="relative mb-6 group cursor-pointer" onclick="toggleModal('addChannelModal')">
+                <div class="absolute -inset-4 bg-brand-500 blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-700 rounded-full animate-pulse-slow"></div>
+                <div class="relative w-24 h-24 bg-dark-surface rounded-[2rem] flex items-center justify-center shadow-2xl border border-white/5 group-hover:scale-105 group-active:scale-95 transition-transform duration-500 ease-out">
+                    <i data-lucide="zap" class="w-10 h-10 text-brand-400"></i>
                 </div>
             </div>
-            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight text-center">SleekrStream</h2>
-            <p class="text-gray-400 max-w-sm text-center leading-relaxed">A modern IPTV experience.<br>Select a channel from the list or add a new stream to begin.</p>
             
-            <div class="mt-8 gap-4 text-xs text-gray-500 font-mono hidden sm:flex">
-                <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">SPACE</kbd> Play/Pause</span>
-                <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">F</kbd> Fullscreen</span>
-                 <span class="flex items-center gap-1.5"><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">←</kbd><kbd class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5 font-sans">→</kbd> Change Channel</span>
+            <h2 class="text-3xl font-bold text-white mb-2 tracking-tight text-center">SleekrStream</h2>
+            <p class="text-gray-500 max-w-sm text-center text-sm mb-12">Select a channel or add a stream to begin.</p>
+            
+            <!-- Fading Tips Container -->
+            <div class="h-12 flex items-center justify-center relative z-10">
+                <p id="fadingTipText" class="text-sm font-medium text-brand-300/80 transition-opacity duration-500 opacity-100 text-center select-none">
+                    <!-- Text injected by JS -->
+                </p>
             </div>
+
+            <!-- Action Button -->
+            <button onclick="importExampleChannels()" class="mt-8 text-xs text-gray-600 hover:text-white transition-colors flex items-center gap-2 px-4 py-2 rounded-full border border-transparent hover:border-white/10 hover:bg-white/5">
+                <i data-lucide="download-cloud" class="w-3 h-3"></i> Load Demo Playlist
+            </button>
         </div>
 
         <!-- NEW LOCATION: Mobile Menu -->
@@ -1053,6 +1073,7 @@
     let totalRemoved = 0;
     let urlValidationTimeout;
     let currentSortMode = 'default'; // 'default', 'health_asc', 'health_desc'
+    let captionTrackListener = null; // Listener reference for cleaning up
 
     // Mobile specific interaction state
     let isTouchInteraction = false;
@@ -1065,6 +1086,8 @@
         videoContainer: document.getElementById('videoContainer'),
         backgroundCanvas: document.getElementById('backgroundCanvas'),
         controlsOverlay: document.getElementById('controlsOverlay'),
+        captionOverlay: document.getElementById('captionOverlay'),
+        captionText: document.getElementById('captionText'),
         mobileMenuOptions: document.getElementById('mobileMenuOptions'),
         desktopControls: document.getElementById('desktopControls'),
         channelList: document.getElementById('channelList'),
@@ -1134,6 +1157,42 @@
     };
 
     let currentFilterGroup = 'all';
+	
+	// --- INSERT FADING TIPS LOGIC HERE ---
+    const fadingTips = [
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">SPACE</kbd> to Play/Pause`,
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">F</kbd> for Fullscreen`,
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">/</kbd> to Search Channels`,
+        `Tip: You can import .m3u playlists to add thousands of channels`,
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">C</kbd> to toggle Captions`,
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">S</kbd> to see Nerd Stats`,
+        `Tip: Right-click a channel in the list to Favorite it`
+    ];
+
+    function initFadingTips() {
+        const el = document.getElementById('fadingTipText');
+        if(!el) return;
+        
+        let index = 0;
+        el.innerHTML = fadingTips[0]; // Set initial
+
+        setInterval(() => {
+            // 1. Fade Out
+            el.classList.remove('opacity-100');
+            el.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                // 2. Change Text
+                index = (index + 1) % fadingTips.length;
+                el.innerHTML = fadingTips[index];
+                
+                // 3. Fade In
+                el.classList.remove('opacity-0');
+                el.classList.add('opacity-100');
+            }, 700); // Wait for CSS transition (matches duration-700)
+            
+        }, 5000); // Change every 5 seconds
+    }
 
     // --- INIT ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -1151,6 +1210,8 @@
         handleIncomingShareLink();
         renderBrowsePlaylists();
         setupUrlValidation();
+		
+		initFadingTips();
         
         els.searchInput.addEventListener('input', renderChannels);
         els.inpLogo.addEventListener('input', updateLogoPreview);
@@ -1321,17 +1382,136 @@
     // --- KEYBOARD SHORTCUTS ---
     function setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-             // Ignore shortcuts if an input is focused or a modal is open
-             if (e.target.tagName === 'INPUT' || document.querySelector('.fixed.inset-0:not(.hidden)')) return;
+            // 1. GLOBAL ESCAPE: Handle Closing UI elements regardless of focus
+            if (e.code === 'Escape') {
+                // Close Modals
+                const openModal = document.querySelector('.fixed.z-50:not(.hidden), .fixed.z-[60]:not(.hidden), .fixed.z-[70]:not(.hidden)');
+                if (openModal) {
+                    // Find the close button or toggle function associated
+                    const id = openModal.id;
+                    if(id) toggleModal(id);
+                    return;
+                }
+                // Close Mobile Sidebar
+                if (isMobileSidebarOpen) {
+                    toggleSidebar();
+                    return;
+                }
+                // Close Fullscreen Menu
+                if (isFullscreenMenuOpen) {
+                    toggleFullscreenMenu();
+                    return;
+                }
+                // Close Stats
+                if (!els.stats.overlay.classList.contains('hidden')) {
+                    toggleStats();
+                    return;
+                }
+                // Unfocus Search if focused
+                if (document.activeElement === els.searchInput) {
+                    els.searchInput.blur();
+                    return;
+                }
+            }
 
+            // 2. INPUT GUARD: Don't trigger shortcuts if typing in an input
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                return;
+            }
+
+            // 3. MODAL GUARD: Don't trigger player controls if a modal is open
+            const modalIds = [
+                'addChannelModal', 
+                'settingsModal', 
+                'browsePlaylistsModal', 
+                'confirmModal', 
+                'shareConfirmModal', 
+                'importProgressModal'
+            ];
+            const isModalOpen = modalIds.some(id => {
+                const el = document.getElementById(id);
+                return el && !el.classList.contains('hidden');
+            });
+            if (isModalOpen) return;
+
+            // 4. SHORTCUT SWITCH
             switch(e.code) {
-                case 'Space': e.preventDefault(); togglePlay(); break;
-                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
-                case 'KeyM': toggleMute(); break;
-                case 'ArrowUp': e.preventDefault(); setVolume(Math.min(1, video.volume + 0.1)); break;
-                case 'ArrowDown': e.preventDefault(); setVolume(Math.max(0, video.volume - 0.1)); break;
-                case 'ArrowRight': e.preventDefault(); loadNextChannel(); break;
-                case 'ArrowLeft': e.preventDefault(); loadPrevChannel(); break;
+                // Playback
+                case 'Space': 
+                case 'KeyK': // YouTube standard
+                    e.preventDefault(); 
+                    togglePlay(); 
+                    break;
+                
+                // Volume
+                case 'ArrowUp': 
+                    e.preventDefault(); 
+                    setVolume(Math.min(1, video.volume + 0.05)); 
+                    break;
+                case 'ArrowDown': 
+                    e.preventDefault(); 
+                    setVolume(Math.max(0, video.volume - 0.05)); 
+                    break;
+                case 'KeyM': 
+                    toggleMute(); 
+                    break;
+
+                // Navigation
+                case 'ArrowRight': 
+                    e.preventDefault(); 
+                    loadNextChannel(); 
+                    break;
+                case 'ArrowLeft': 
+                    e.preventDefault(); 
+                    loadPrevChannel(); 
+                    break;
+
+                // View Modes
+                case 'KeyF': 
+                    e.preventDefault(); 
+                    toggleFullscreen(); 
+                    break;
+                case 'KeyP': 
+                    togglePiP(); 
+                    break;
+                case 'KeyA':
+                    toggleAspect();
+                    break;
+                case 'KeyS':
+                    // Shift+S for Snapshot, S for Stats
+                    if (e.shiftKey) {
+                        takeSnapshot();
+                    } else {
+                        toggleStats();
+                    }
+                    break;
+                case 'KeyC':
+                    toggleCaptions();
+                    break;
+                case 'KeyB':
+                    toggleSidebar();
+                    break;
+
+                // Channel Actions
+                case 'KeyR':
+                    retryStream();
+                    showToast('Reloading Stream...');
+                    break;
+                case 'KeyL':
+                    toggleCurrentFavorite();
+                    break;
+                
+                // Interface
+                case 'Slash': // / key
+                    e.preventDefault();
+                    if (!isDesktopSidebarCollapsed && window.innerWidth >= 768) {
+                        els.searchInput.focus();
+                    } else if (window.innerWidth >= 768) {
+                        // Open sidebar first if closed
+                        toggleSidebar();
+                        setTimeout(() => els.searchInput.focus(), 300);
+                    }
+                    break;
             }
         });
     }
@@ -1771,13 +1951,18 @@
         loadChannel(currentList[prevIndex].id);
     }
 
-    function loadChannel(id) {
+function loadChannel(id) {
         const channel = channels.find(c => c.id === id);
         if (!channel || (id === currentChannelId && hls)) return;
 
-        // --- NEW: Reset Caption State ---
+        // --- NEW: Reset Caption State & Overlay ---
         // Ensure state is clean before the new stream loads
-        isCaptionsOn = false; 
+        isCaptionsOn = false;
+        els.captionOverlay.classList.add('hidden');
+        els.captionText.textContent = '';
+        if (captionTrackListener) {
+            // Cleanup existing listener if possible
+        }
         // --------------------------------
 
         if (window.innerWidth < 768 && isMobileSidebarOpen) {
@@ -1798,7 +1983,6 @@
         if(fsActiveOld) fsActiveOld.classList.remove('active');
         const fsActiveNew = document.getElementById(`fs-channel-item-${id}`);
         if(fsActiveNew) fsActiveNew.classList.add('active');
-
 
         currentChannelId = id;
         document.title = `SleekrStream • ${channel.name}`;
@@ -1841,6 +2025,9 @@
         if (Hls.isSupported()) {
             hls = new Hls(hlsConfig);
             
+            // 1. Prevent HLS from ever drawing default captions
+            hls.subtitleDisplay = false; 
+            
             hls.on(Hls.Events.MANIFEST_LOADING, () => {
                 els.loadingStatus.textContent = "Connecting to stream...";
             });
@@ -1849,15 +2036,25 @@
                 els.loadingStatus.textContent = "Stream manifest loaded, preparing video...";
                 video.play().catch(() => {});
                 
-                // Listen for any text tracks (including embedded) being added.
-                // This updates the button if captions appear shortly after load.
-                video.textTracks.onaddtrack = () => {
-                    buildPlayerControls(); // Rebuild controls to enable the button
-                    // Optional: Restore previous state if you wanted persistence
-                    // toggleCaptions(isCaptionsOn, true); 
+                // 2. Aggressive Track Listener
+                // Catch tracks immediately as they are added (metadata or subs)
+                video.textTracks.onaddtrack = (event) => {
+                    buildPlayerControls(); 
+                    
+                    if (isCaptionsOn) {
+                        setupCustomCaptions();
+                    } else {
+                        // CRITICAL: Immediately disable the new track to prevent flashing
+                        if (event.track) event.track.mode = 'disabled';
+                        suppressNativeCaptions();
+                    }
                 };
 
-                buildPlayerControls(); // Build once initially
+                // 3. Initial Suppression
+                // Ensure anything loaded with the manifest is disabled immediately
+                if (!isCaptionsOn) suppressNativeCaptions();
+
+                buildPlayerControls();
                 
                 const preferredTrack = hls.audioTracks.findIndex(t => t.lang === settings.preferredLang);
                 if (preferredTrack > -1) {
@@ -1902,6 +2099,8 @@
                 updateChannelHealth(channel.id, 'poor');
                 showError("Native HLS playback is not supported for this stream.")
             });
+            // Apply suppression for Native (Safari) as well
+            if (!isCaptionsOn) suppressNativeCaptions();
         }
     }
 
@@ -1945,6 +2144,7 @@
             isCaptionsOn = false;
             // We manually ensure HLS engine is off if it was previously on
             if(hls) hls.subtitleDisplay = false; 
+            els.captionOverlay.classList.add('hidden');
         }
 
         const controls = [
@@ -2145,65 +2345,154 @@
 
     // --- CAPTIONS & AUDIO TRACKS ---
     
-    function toggleCaptions(forceState, silent = false) {
-        // --- NEW: Strict Availability Check ---
-        const hlsSubs = (hls && hls.subtitleTracks && hls.subtitleTracks.length > 0);
-        const nativeSubs = (video.textTracks && video.textTracks.length > 0);
-        
-        // If no captions exist, force OFF and Return. Do not allow toggle.
-        if (!hlsSubs && !nativeSubs) {
-            isCaptionsOn = false;
-            // Update UI to reflect disabled state (remove purple colors)
-            const desktopBtn = document.getElementById('desktop-btn-captions');
-            const mobileBtn = document.getElementById('mobile-btn-captions');
-            if (desktopBtn) {
-                desktopBtn.classList.remove('text-brand-400', 'hover:text-brand-300');
-                desktopBtn.classList.add('text-gray-300', 'hover:text-white');
+    // Helper to clean HTML entities or specific styling from cue text
+	function suppressNativeCaptions() {
+        if (video.textTracks) {
+            for (let i = 0; i < video.textTracks.length; i++) {
+                video.textTracks[i].mode = 'disabled';
             }
-            if (mobileBtn) mobileBtn.classList.remove('text-brand-400');
-            return; 
         }
-        // -------------------------------------
+    }
+
+    function cleanCaptionText(text) {
+        if (!text) return '';
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = text;
+        const decodedText = tempDiv.textContent || tempDiv.innerText || "";
+        return decodedText.replace(/<[^>]*>/g, '').trim();
+    }
+
+    function setupCustomCaptions() {
+        // 1. Reset all tracks to disabled first to ensure no native UI overlaps
+        // We iterate backwards to avoid index issues if tracks shift (rare but possible)
+        if (video.textTracks) {
+            for (let i = 0; i < video.textTracks.length; i++) {
+                video.textTracks[i].mode = 'disabled'; 
+            }
+        }
+
+        // 2. Find the active subtitle track
+        // Instead of relying on hls.subtitleTrack index matching video.textTracks index
+        // (which breaks if browser adds metadata tracks), we find the specific track.
+        let activeTrack = null;
+
+        if (video.textTracks && video.textTracks.length > 0) {
+            for (let i = 0; i < video.textTracks.length; i++) {
+                const t = video.textTracks[i];
+                // Check if this is a subtitle/caption track
+                if (t.kind === 'subtitles' || t.kind === 'captions') {
+                    // If HLS is active, ensure we match the language if possible, 
+                    // otherwise default to the first available subtitle track.
+                    if (hls && hls.subtitleTracks && hls.subtitleTracks.length > 0) {
+                         // If HLS has a selected track, try to find a DOM track with matching language
+                         const hlsSelected = hls.subtitleTracks[hls.subtitleTrack || 0];
+                         if (hlsSelected && t.language === hlsSelected.lang) {
+                             activeTrack = t;
+                             break;
+                         }
+                    }
+                    
+                    // Fallback: If no specific match found yet, take the first subtitle track
+                    if (!activeTrack) activeTrack = t;
+                }
+            }
+        }
+
+        // 3. Enable the listener
+        if (activeTrack) {
+            activeTrack.mode = 'hidden'; // 'hidden' fires events but doesn't render native UI
+            
+            // Define the update logic
+            const updateUI = () => {
+                // Safely access activeCues
+                if (activeTrack.activeCues && activeTrack.activeCues.length > 0) {
+                    // Get the last cue in the list (usually the most current/relevant)
+                    const lastCue = activeTrack.activeCues[activeTrack.activeCues.length - 1];
+                    const text = cleanCaptionText(lastCue.text);
+                    updateCustomCaptionUI(text);
+                } else {
+                    updateCustomCaptionUI('');
+                }
+            };
+
+            // Remove old listener if exists (to prevent duplicates)
+            activeTrack.oncuechange = null;
+            
+            // Attach new listener
+            activeTrack.oncuechange = updateUI;
+            
+            // 4. IMMEDIATE TRIGGER:
+            // If the video is already playing a caption, oncuechange won't fire 
+            // until the *next* cue. We must manually check immediately.
+            updateUI();
+        }
+    }
+
+    function updateCustomCaptionUI(text) {
+        if (text && isCaptionsOn) {
+            els.captionText.innerHTML = text;
+            els.captionOverlay.classList.remove('hidden');
+        } else {
+            els.captionOverlay.classList.add('hidden');
+        }
+    }
+
+    function toggleCaptions(forceState, silent = false) {
+        let isAvailable = false;
+        if (hls) {
+            isAvailable = hls.subtitleTracks && hls.subtitleTracks.length > 0;
+        } else {
+            isAvailable = (video.textTracks && Array.from(video.textTracks).some(t => t.kind === 'subtitles' || t.kind === 'captions'));
+        }
+
+        if (!isAvailable) {
+            if (!silent) {
+                showToast("Captions are not available for this stream", "error");
+            }
+            isCaptionsOn = false;
+            return;
+        }
 
         if (typeof forceState === 'boolean') {
             isCaptionsOn = forceState;
         } else {
             isCaptionsOn = !isCaptionsOn;
         }
-       
-        
-        // Manage Native Tracks
-        for (let i = 0; i < video.textTracks.length; i++) {
-             video.textTracks[i].mode = isCaptionsOn ? 'showing' : 'hidden';
+
+        if (isCaptionsOn) {
+            if (hls) {
+                hls.subtitleDisplay = false;
+                if (hls.subtitleTrack === -1) hls.subtitleTrack = 0;
+            }
+            setupCustomCaptions();
+        } else {
+            els.captionOverlay.classList.add('hidden');
+            els.captionText.textContent = '';
+            if (hls) hls.subtitleTrack = -1;
+            suppressNativeCaptions();
         }
 
-        // Manage HLS Tracks
-        if(hls) {
-            hls.subtitleDisplay = isCaptionsOn;
-            if (isCaptionsOn && hls.subtitleTrack === -1 && hls.subtitleTracks.length > 0) {
-                 hls.subtitleTrack = 0;
-            }
-        }
-        
-        // --- VISUAL UPDATE ---
+        // --- ANIMATION FIX: Manually update only the necessary button styles ---
         const desktopBtn = document.getElementById('desktop-btn-captions');
         const mobileBtn = document.getElementById('mobile-btn-captions');
 
         if (desktopBtn) {
+            const btnClasses = desktopBtn.classList;
             if (isCaptionsOn) {
-                // Enabled State: Remove generic styles, add Brand styles
-                desktopBtn.classList.remove('text-gray-300', 'hover:text-white');
-                desktopBtn.classList.add('text-brand-400', 'hover:text-brand-300');
+                btnClasses.remove('text-gray-300', 'hover:text-white');
+                btnClasses.add('text-brand-400', 'hover:text-brand-300');
             } else {
-                // Disabled State: Remove Brand styles, add generic styles
-                desktopBtn.classList.remove('text-brand-400', 'hover:text-brand-300');
-                desktopBtn.classList.add('text-gray-300', 'hover:text-white');
+                btnClasses.remove('text-brand-400', 'hover:text-brand-300');
+                btnClasses.add('text-gray-300', 'hover:text-white');
             }
         }
-
         if (mobileBtn) {
-             mobileBtn.classList.toggle('text-brand-400', isCaptionsOn);
+            const icon = mobileBtn.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('text-brand-400', isCaptionsOn);
+            }
         }
+        // --- END ANIMATION FIX ---
 
         if (!silent) {
             showToast(`Captions ${isCaptionsOn ? 'ON' : 'OFF'}`);
@@ -2449,8 +2738,26 @@
     }
 
     function retryStream() {
+        // 1. Force cleanup of the existing HLS instance
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        
+        // 2. Reset UI elements
         els.error.style.display = 'none';
-        if(currentChannelId) loadChannel(currentChannelId);
+        els.loading.style.display = 'flex';
+        els.loadingTitle.textContent = "Retrying...";
+        els.loadingStatus.textContent = "Attempting to reconnect to stream...";
+
+        // 3. Reload
+        if(currentChannelId) {
+            // Small delay to ensure browser cleans up socket
+            setTimeout(() => loadChannel(currentChannelId), 100);
+        } else {
+            // Should not happen, but safe fallback
+            toggleModal('addChannelModal');
+        }
     }
 
     function showError(msg) {
