@@ -144,6 +144,14 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
+     .tiny-loader {
+        width: 16px;
+        height: 16px;
+        border: 2px solid transparent;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
@@ -334,6 +342,14 @@
     #fullscreenChannelMenu.open {
         transform: translateX(0);
     }
+
+    /* Browse Playlist Modal Tab Styling */
+    .browse-tab.active {
+        border-color: #6366f1;
+        color: #fff;
+        background-color: rgba(99, 102, 241, 0.1);
+    }
+
 </style>
 </head>
 <body class="bg-dark-bg text-gray-300 h-screen w-screen overflow-hidden flex flex-row antialiased selection:bg-brand-500 selection:text-white">
@@ -374,15 +390,18 @@
         </div>
         
         <div class="flex gap-2">
-            <div class="relative custom-select flex-1" id="groupFilterDropdown">
+            <!-- Added min-w-0 here -->
+            <div class="relative custom-select flex-1 min-w-0" id="groupFilterDropdown">
                 <button onclick="toggleDropdown()" class="w-full bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-sm flex justify-between items-center hover:border-dark-light hover:bg-white/5 transition-all text-gray-300 active:scale-[0.98]">
                     <span id="selectedGroupLabel" class="truncate">All Groups</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
                 </button>
                 <div class="custom-select-options absolute top-full left-0 right-0 mt-2 bg-dark-surface border border-dark-border rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto no-scrollbar animate-slide-in p-1.5" id="groupOptionsList"></div>
             </div>
-
-             <button onclick="filterFavorites()" id="favFilterBtn" class="px-3 py-2 text-sm font-medium border border-dark-border rounded-xl hover:bg-white/5 text-gray-400 transition-all flex items-center justify-center gap-2 active:scale-95">
+             <button onclick="toggleSort()" id="sortBtn" title="Sort Channels" class="px-3 py-2 text-sm font-medium border border-dark-border rounded-xl hover:bg-white/5 text-gray-400 transition-all flex items-center justify-center gap-2 active:scale-95">
+                <i data-lucide="arrow-down-a-z" class="w-4 h-4"></i>
+             </button>
+             <button onclick="filterFavorites()" id="favFilterBtn" title="Filter Favorites" class="px-3 py-2 text-sm font-medium border border-dark-border rounded-xl hover:bg-white/5 text-gray-400 transition-all flex items-center justify-center gap-2 active:scale-95">
                 <i data-lucide="heart" class="w-4 h-4"></i>
              </button>
         </div>
@@ -531,10 +550,13 @@
             </div>
         </div>
 
-        <!-- NEW LOCATION: Mobile Menu is now here, outside the controls overlay -->
-        <div id="mobileMenuOptions" class="absolute bottom-20 sm:bottom-28 right-2 sm:right-6 w-52 p-2 flex-col gap-1 hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu overflow-y-auto no-scrollbar max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-13rem)]">
-            <!-- Mobile menu options are dynamically populated -->
-        </div>
+        <!-- NEW LOCATION: Mobile Menu -->
+		<div id="mobileMenuOptions" class="absolute bottom-20 sm:bottom-28 right-2 sm:right-6 w-52 flex-col hidden origin-bottom-right bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mobile-menu-enter z-50 transform-gpu overflow-y-auto no-scrollbar max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-13rem)]">
+			<!-- Removed p-2 from parent. The items will fill the width. -->
+			<div class="p-2 flex flex-col gap-1 w-full">
+				 <!-- Mobile menu options are dynamically populated -->
+			</div>
+		</div>
 
         <!-- CONTROLS OVERLAY -->
         <div id="controlsOverlay" class="controls-wrapper absolute bottom-2 sm:bottom-6 left-2 sm:left-6 right-2 sm:right-6 p-3 sm:p-4 z-20 glass rounded-[24px] ui-element ui-hidden transform-gpu">
@@ -651,24 +673,30 @@
 
 <!-- MODAL: Add/Edit Channel -->
 <div id="addChannelModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
-    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
+    <!-- Removed p-6 sm:p-8 from this container, added overflow-hidden -->
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
+        
         <!-- Decorative Glow -->
         <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-        <div class="flex justify-between items-center mb-6 shrink-0 relative">
-             <h3 class="text-2xl font-bold text-white flex items-center gap-3">
-                <span id="modalTitle">Add Content</span>
-            </h3>
-            <button onclick="toggleModal('addChannelModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
-        </div>
-        
-        <!-- Tabs -->
-        <div id="addChannelTabs" class="border-b border-dark-border flex mb-6 shrink-0">
-            <button id="tabSingle" onclick="switchAddTab('single')" class="flex-1 text-center py-2 text-sm font-medium border-b-2 transition-colors border-brand-500 text-white">Single Stream</button>
-            <button id="tabPlaylist" onclick="switchAddTab('playlist')" class="flex-1 text-center py-2 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-400 hover:text-white">Import from URL</button>
+        <!-- Header Section (Added padding here) -->
+        <div class="p-6 sm:p-8 pb-0 shrink-0 relative z-10">
+            <div class="flex justify-between items-center mb-6">
+                 <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <span id="modalTitle">Add Content</span>
+                </h3>
+                <button onclick="toggleModal('addChannelModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <!-- Tabs -->
+            <div id="addChannelTabs" class="border-b border-dark-border flex mb-0">
+                <button id="tabSingle" onclick="switchAddTab('single')" class="flex-1 text-center py-2 text-sm font-medium border-b-2 transition-colors border-brand-500 text-white">Single Stream</button>
+                <button id="tabPlaylist" onclick="switchAddTab('playlist')" class="flex-1 text-center py-2 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-400 hover:text-white">Import from URL</button>
+            </div>
         </div>
 
-        <div class="overflow-y-auto no-scrollbar relative flex-1 -mx-2 px-2">
+        <!-- Scrollable Content Section (Added padding here, removed negative margins) -->
+        <div class="overflow-y-auto no-scrollbar relative flex-1 p-6 sm:p-8 pt-6">
             <!-- Single Stream Form -->
             <div id="formSingle" class="space-y-5">
                 <form id="channelForm" onsubmit="handleChannelSubmit(event)" class="space-y-5 relative">
@@ -678,11 +706,19 @@
                         <input type="text" id="inpName" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500" placeholder="e.g., My Favorite Channel">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u, .m3u8)</label>
-                        <div class="relative group">
-                            <input type="url" id="inpUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors font-mono text-sm placeholder-gray-500" placeholder="https://...">
-                            <i data-lucide="link-2" class="absolute left-4 top-4 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+                        <div class="flex justify-between items-center">
+                            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u, .m3u8)</label>
+                            <a href="https://iptv-org.github.io" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-400 hover:text-brand-300 transition-colors mb-2 flex items-center gap-1">
+                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                                Get IPTV streaming links
+                            </a>
                         </div>
+                        <div class="relative group">
+                            <input type="text" id="inpUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl pl-11 pr-10 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors font-mono text-sm placeholder-gray-500" placeholder="https://...">
+                             <i data-lucide="link-2" class="absolute left-4 top-4 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+                             <div id="urlValidationStatus" class="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center"></div>
+                        </div>
+                        <p id="urlValidationMessage" class="text-xs text-red-400/80 mt-1.5 ml-1 h-3"></p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 items-stretch">
                         <div class="sm:col-span-2 flex flex-col gap-5">
@@ -710,7 +746,7 @@
                     </div>
                     <div class="pt-6 flex gap-3 border-t border-dark-border/50">
                         <button type="button" onclick="toggleModal('addChannelModal')" class="flex-1 px-4 py-3 bg-transparent border border-dark-border rounded-xl text-gray-300 hover:text-white hover:border-dark-light transition font-medium active:scale-[0.98]">Cancel</button>
-                        <button type="submit" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98]">Save Channel</button>
+                        <button type="submit" id="saveChannelBtn" class="flex-1 px-4 py-3 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition font-bold shadow-lg shadow-brand-500/20 transform active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-brand-600/40 disabled:shadow-none">Save Channel</button>
                     </div>
                     <div id="deleteBtnContainer" class="hidden flex justify-center pt-2">
                         <button type="button" onclick="deleteChannel()" class="text-red-500 hover:text-red-400 text-xs py-2 px-3 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1.5 opacity-80 hover:opacity-100 active:scale-95">
@@ -724,15 +760,21 @@
             <div id="formPlaylist" class="hidden space-y-5">
                  <form onsubmit="handlePlaylistImport(event)" class="space-y-5 relative pb-5">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">M3U Playlist URL</label>
-                        <input type="url" id="inpM3uUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors font-mono text-sm placeholder-gray-500" placeholder="https://...">
+                        <div class="flex justify-between items-center">
+							<label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">M3U Playlist URL</label>
+							<button type="button" onclick="toggleModal('browsePlaylistsModal')" class="text-xs text-brand-400 hover:text-brand-300 transition-colors mb-2 flex items-center gap-1">
+                                <i data-lucide="globe" class="w-3 h-3"></i> Browse Public Playlists
+                            </button>
+						</div>
+                        <input type="text" id="inpM3uUrl" required class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors font-mono text-sm placeholder-gray-500" placeholder="https://...">
+                        <p class="text-xs text-gray-500 mt-2 ml-1">You can add multiple playlist URLs separated by commas.</p>
                     </div>
                     
                     <div class="pt-4 space-y-4">
                         <div class="flex items-center justify-between p-4 bg-dark-bg/50 border border-dark-border rounded-xl">
                             <div class="pr-4">
-                                <span class="font-semibold text-white">Smart Cleanup</span>
-                                <p class="text-xs text-gray-400 mt-1">Automatically test and remove dead or offline streams during import. Recommended for large lists.</p>
+                                <span class="font-semibold text-white">Check stream availability</span>
+                                <p class="text-xs text-gray-400 mt-1">During import, check if streams are reachable. Unreachable streams will be marked 'Poor' instead of discarded.</p>
                             </div>
                             <label class="custom-checkbox shrink-0">
                                 <input type="checkbox" id="inpSmartCleanup" checked>
@@ -753,51 +795,111 @@
     </div>
 </div>
 
+<!-- MODAL: Browse Public Playlists -->
+<div id="browsePlaylistsModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="bg-dark-surface w-full max-w-4xl h-[90vh] rounded-3xl border border-dark-border shadow-2xl transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-6 shrink-0 relative flex justify-between items-center border-b border-dark-border">
+            <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="globe" class="w-6 h-6 text-brand-400"></i> Public IPTV Playlists
+            </h3>
+            <button onclick="toggleModal('browsePlaylistsModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <!-- Search & Tabs -->
+        <div class="p-4 shrink-0 border-b border-dark-border bg-dark-surface/50">
+            <div class="relative group focus-within:ring-2 focus-within:ring-brand-500/50 rounded-xl transition-all mb-4">
+                <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
+                <input type="text" id="browseSearchInput" placeholder="Search within tab..." oninput="renderBrowsePlaylists()"
+                    class="w-full bg-dark-bg border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 focus:outline-none transition-colors placeholder-gray-500">
+            </div>
+            <div class="flex space-x-2 pb-1">
+				<button onclick="switchBrowseTab('category')" id="browse-tab-category" class="browse-tab active flex-1 text-center text-sm font-medium px-4 py-2 rounded-lg border border-transparent hover:bg-white/5 hover:text-white transition-colors">Categories</button>
+				<button onclick="switchBrowseTab('language')" id="browse-tab-language" class="browse-tab flex-1 text-center text-sm font-medium px-4 py-2 rounded-lg border border-transparent text-gray-400 hover:bg-white/5 hover:text-white transition-colors">Languages</button>
+				<button onclick="switchBrowseTab('country')" id="browse-tab-country" class="browse-tab flex-1 text-center text-sm font-medium px-4 py-2 rounded-lg border border-transparent text-gray-400 hover:bg-white/5 hover:text-white transition-colors">Countries</button>
+				<button onclick="switchBrowseTab('region')" id="browse-tab-region" class="browse-tab flex-1 text-center text-sm font-medium px-4 py-2 rounded-lg border border-transparent text-gray-400 hover:bg-white/5 hover:text-white transition-colors">Regions</button>
+			</div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-4 pb-4" id="browsePlaylistsContent">
+            <!-- Content is rendered by JS -->
+        </div>
+    </div>
+</div>
+
 <!-- MODAL: Settings -->
 <div id="settingsModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
-    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
+    <!-- Removed p-6 sm:p-8, added overflow-hidden -->
+    <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl transform transition-all scale-100 animate-slide-in relative overflow-hidden flex flex-col max-h-[90vh]">
+        
         <!-- Decorative Glow -->
         <div class="absolute top-0 left-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-        <div class="flex justify-between items-center mb-6 shrink-0 relative">
+        <!-- Header (Added padding here) -->
+        <div class="flex justify-between items-center p-6 sm:p-8 shrink-0 relative z-10">
             <h3 class="text-2xl font-bold text-white flex items-center gap-3">
                 <i data-lucide="settings" class="w-6 h-6 text-brand-400"></i> Settings
             </h3>
             <button onclick="toggleModal('settingsModal')" class="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
 
-        <div class="overflow-y-auto no-scrollbar relative flex-1 -mx-2 px-2 space-y-8">
-            <!-- Data Management Section -->
-            <div class="space-y-4">
-                <h4 class="text-xs font-semibold text-gray-400 ml-1 uppercase tracking-wider">Data Management</h4>
+        <!-- Content (Added padding here) -->
+        <div class="overflow-y-auto no-scrollbar relative flex-1 p-6 sm:p-8 pt-0 space-y-5">
+            
+            <!-- Card 1: Data Management -->
+            <div class="bg-dark-bg/50 border border-dark-border rounded-2xl p-5">
+                <h4 class="text-xs font-semibold text-gray-400 mb-4 uppercase tracking-wider">Data Management</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button onclick="initiateImport()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-bg hover:bg-dark-light border border-dark-border rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
+                    <button onclick="initiateImport()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-surface/50 hover:bg-dark-light/70 border border-dark-light rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
                         <i data-lucide="upload-cloud" class="w-5 h-5 text-brand-400"></i>
                         <div>
                             <span class="font-bold">Import Playlist</span>
-                            <p class="text-xs text-gray-500">Merge from .json file</p>
+                            <p class="text-xs text-gray-500">Merge from .json</p>
                         </div>
                     </button>
                     <input type="file" id="importFile" class="hidden" accept=".json" onchange="importPlaylists(event)">
                     
-                    <button onclick="exportPlaylists()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-bg hover:bg-dark-light border border-dark-border rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
+                    <button onclick="exportPlaylists()" class="w-full text-left flex items-center gap-3 p-4 bg-dark-surface/50 hover:bg-dark-light/70 border border-dark-light rounded-xl transition text-sm text-gray-200 active:scale-[0.98]">
                         <i data-lucide="download-cloud" class="w-5 h-5 text-brand-400"></i>
                         <div>
                             <span class="font-bold">Export Playlist</span>
-                            <p class="text-xs text-gray-500">Save to .json file</p>
+                            <p class="text-xs text-gray-500">Save to .json</p>
                         </div>
                     </button>
                 </div>
             </div>
 
-            <!-- Danger Zone Section -->
-            <div class="space-y-4 pt-4">
-                 <h4 class="text-xs font-semibold text-red-500/80 ml-1 uppercase tracking-wider">Danger Zone</h4>
-                 <div class="border border-red-500/20 bg-red-500/5 rounded-xl p-6 text-center">
+            <!-- Card 2: Maintenance -->
+            <div class="bg-dark-bg/50 border border-dark-border rounded-2xl p-5 text-center">
+                <h4 class="text-xs font-semibold text-gray-400 mb-5 uppercase tracking-wider">Maintenance</h4>
+                <div class="space-y-6">
+                    <div>
+                        <h5 class="font-bold text-white">Scan Channel Health</h5>
+                        <p class="text-sm text-gray-400 mt-2 mb-4 leading-relaxed max-w-sm mx-auto">Check all channels to see if they're online. This can take a while for large lists.</p>
+                        <button id="scanHealthBtn" onclick="scanAllChannelHealth()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition text-sm font-bold shadow-lg shadow-brand-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-wait">
+                           <i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan
+                        </button>
+                        <p id="scanHealthStatus" class="text-xs text-gray-500 mt-3 hidden"></p>
+                    </div>
+                     <div class="pt-6 border-t border-dark-border/50">
+                        <h5 class="font-bold text-white">Clean Up Playlist</h5>
+                        <p class="text-sm text-gray-400 mt-2 mb-4 leading-relaxed max-w-sm mx-auto">Permanently remove all channels currently marked with 'Poor' health.</p>
+                        <button id="deletePoorChannelsBtn" onclick="deletePoorChannels()" class="px-5 py-2.5 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/20 rounded-xl text-yellow-300 hover:text-white transition text-sm font-bold active:scale-95">
+                           <i data-lucide="trash-2" class="inline w-4 h-4 mr-2"></i> Delete Poor Channels
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Danger Zone -->
+            <div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-5 text-center">
+                <h4 class="text-xs font-semibold text-red-400/80 mb-4 uppercase tracking-wider">Danger Zone</h4>
+                <div>
                     <h5 class="font-bold text-white">Clear All Data</h5>
-                    <p class="text-sm text-gray-400 mt-2 mb-5 leading-relaxed">This will permanently delete all your channels and favorites.</p>
+                    <p class="text-sm text-gray-400 mt-2 mb-4 leading-relaxed max-w-sm mx-auto">This will permanently delete all your channels and favorites. This is irreversible.</p>
                     <button onclick="resetAllData()" class="px-6 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-white transition text-sm font-bold shadow-lg shadow-red-500/20 active:scale-95">
-                        Reset
+                        Reset Application
                     </button>
                 </div>
             </div>
@@ -806,9 +908,9 @@
 </div>
 
 <!-- MODAL: Confirmation Dialog -->
-<div id="confirmModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+<div id="confirmModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
     <div class="bg-dark-surface w-full max-w-md rounded-3xl border border-dark-border shadow-2xl p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden text-center">
-        <div class="bg-red-500/10 p-4 rounded-full mb-5 ring-1 ring-red-500/20 inline-block">
+        <div id="confirmIcon" class="bg-red-500/10 p-4 rounded-full mb-5 ring-1 ring-red-500/20 inline-block">
             <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>
         </div>
         <h3 id="confirmTitle" class="text-xl font-bold text-white mb-3">Are you sure?</h3>
@@ -825,7 +927,7 @@
 </div>
 
 <!-- MODAL: Share Confirmation -->
-<div id="shareConfirmModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+<div id="shareConfirmModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
     <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden">
         <div class="absolute top-0 left-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
         <div class="flex justify-between items-center mb-6 relative">
@@ -865,12 +967,14 @@
 </div>
 
 <!-- MODAL: Playlist Import Progress -->
-<div id="importProgressModal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
+<div id="importProgressModal" class="fixed inset-0 bg-black/80 z-[70] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity duration-300">
     <div class="bg-dark-surface w-full max-w-lg rounded-3xl border border-dark-border shadow-2xl p-6 sm:p-8 transform transition-all scale-100 animate-slide-in relative overflow-hidden">
         <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
         <div class="relative">
             <h3 class="text-2xl font-bold text-white mb-3" id="importProgressTitle">Importing Playlist...</h3>
             <p class="text-gray-400 text-sm mb-6" id="importProgressStatus">Parsing and validating channels. This may take a few moments...</p>
+            <p class="text-gray-400 text-sm mb-6 hidden" id="importQueueStatus"></p>
+
 
             <div class="space-y-4">
                 <div class="flex justify-between items-baseline mb-1">
@@ -883,11 +987,11 @@
                 <div class="grid grid-cols-2 gap-4 pt-2 text-center">
                     <div>
                         <p class="text-2xl font-bold text-green-400" id="importProgressKept">0</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Kept</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Added</p>
                     </div>
                      <div>
                         <p class="text-2xl font-bold text-red-400" id="importProgressRemoved">0</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Removed</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Marked Poor</p>
                     </div>
                 </div>
             </div>
@@ -909,7 +1013,7 @@
 
 
 <!-- TOAST -->
-<div id="toast" class="fixed top-8 left-1/2 sm:left-auto -translate-x-1/2 sm:translate-x-0 sm:right-8 w-11/12 max-w-sm sm:w-auto glass px-6 py-4 rounded-2xl shadow-2xl transform -translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-50">
+<div id="toast" class="fixed top-8 left-1/2 sm:left-auto -translate-x-1/2 sm:translate-x-0 sm:right-8 w-11/12 max-w-sm sm:w-auto glass px-6 py-4 rounded-2xl shadow-2xl transform -translate-y-32 opacity-0 transition-all duration-500 flex items-center gap-4 z-[80]">
     <div id="toastIcon" class="bg-brand-500/20 p-2 rounded-full"><i data-lucide="check" class="text-brand-400 w-5 h-5"></i></div>
     <div class="flex flex-col">
         <span id="toastMsg" class="font-medium text-sm tracking-wide text-white">Action successful</span>
@@ -934,6 +1038,13 @@
     let sharedChannelData = null; 
     let importWorker = null;
     let isFullscreenMenuOpen = false;
+    let currentBrowseTab = 'category';
+    let importQueue = [];
+    let totalImportCount = 0;
+    let totalKept = 0;
+    let totalRemoved = 0;
+    let urlValidationTimeout;
+    let currentSortMode = 'default'; // 'default', 'health_asc', 'health_desc'
 
     // Mobile specific interaction state
     let isTouchInteraction = false;
@@ -968,6 +1079,9 @@
         logoPreview: document.getElementById('logoPreview'),
         inpLogo: document.getElementById('inpLogo'),
         inpUrl: document.getElementById('inpUrl'),
+        saveChannelBtn: document.getElementById('saveChannelBtn'),
+        urlValidationStatus: document.getElementById('urlValidationStatus'),
+        urlValidationMessage: document.getElementById('urlValidationMessage'),
         fullscreenInfo: document.getElementById('fullscreenInfo'),
         fullscreenChannelLogo: document.getElementById('fullscreenChannelLogo'),
         fullscreenChannelName: document.getElementById('fullscreenChannelName'),
@@ -981,6 +1095,7 @@
             message: document.getElementById('confirmMessage'),
             okBtn: document.getElementById('confirmOkBtn'),
             cancelBtn: document.getElementById('confirmCancelBtn'),
+            icon: document.getElementById('confirmIcon')
         },
         stats: {
             overlay: document.getElementById('statsOverlay'),
@@ -996,6 +1111,7 @@
             modal: document.getElementById('importProgressModal'),
             title: document.getElementById('importProgressTitle'),
             status: document.getElementById('importProgressStatus'),
+            queueStatus: document.getElementById('importQueueStatus'),
             percent: document.getElementById('importProgressPercent'),
             bar: document.getElementById('importProgressBar'),
             kept: document.getElementById('importProgressKept'),
@@ -1025,6 +1141,8 @@
         setupKeyboardShortcuts();
         setupInactivityControls();
         handleIncomingShareLink();
+        renderBrowsePlaylists();
+        setupUrlValidation();
         
         els.searchInput.addEventListener('input', renderChannels);
         els.inpLogo.addEventListener('input', updateLogoPreview);
@@ -1038,7 +1156,7 @@
         
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
-                document.getElementById('fsIcon').setAttribute('data-lucide', 'maximize');
+                document.getElementById('fsIcon').setAttribute('data-lucide', 'minimize');
                 if (isFullscreenMenuOpen) toggleFullscreenMenu(); // Close menu on exiting fullscreen
                 lucide.createIcons();
             }
@@ -1299,10 +1417,12 @@
 
     function updateGroupDropdown() {
         const groups = [...new Set(channels.map(c => c.group || 'Uncategorized'))].sort();
-        let html = `<div onclick="selectGroup('all')" class="px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === 'all' ? 'bg-brand-500/10 text-brand-300' : ''}">All Groups</div>`;
+        // Added 'truncate' class below
+        let html = `<div onclick="selectGroup('all')" class="truncate px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === 'all' ? 'bg-brand-500/10 text-brand-300' : ''}">All Groups</div>`;
         
         groups.forEach(g => {
-            html += `<div onclick="selectGroup('${g}')" class="px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === g ? 'bg-brand-500/10 text-brand-300' : ''}">${g}</div>`;
+            // Added 'truncate' class and a 'title' attribute so users can see full text on hover
+            html += `<div onclick="selectGroup('${g}')" title="${g}" class="truncate px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === g ? 'bg-brand-500/10 text-brand-300' : ''}">${g}</div>`;
         });
         els.groupOptionsList.innerHTML = html;
     }
@@ -1323,19 +1443,35 @@
 
     function handleChannelSubmit(e) {
         e.preventDefault();
+        
+        const url = document.getElementById('inpUrl').value.trim();
+        
+        // Final check, although button should be disabled
+        if (!url || els.saveChannelBtn.disabled) {
+            showToast("Please enter a valid and verified stream URL.", "error");
+            return;
+        }
+
+        const channelId = document.getElementById('channelId').value;
         const formData = {
-            id: document.getElementById('channelId').value || Date.now().toString(),
             name: document.getElementById('inpName').value,
-            url: document.getElementById('inpUrl').value,
+            url: url,
             group: document.getElementById('inpGroup').value || 'Uncategorized',
-            logo: document.getElementById('inpLogo').value
+            logo: document.getElementById('inpLogo').value,
+            health: 'unchecked' // Default health for new channels
         };
 
-        const existingIndex = channels.findIndex(c => c.id === formData.id);
-        if (existingIndex > -1) {
-            channels[existingIndex] = formData;
-            showToast(`Updated ${formData.name}`);
-        } else {
+        if (channelId) { // Handle editing
+            const existingIndex = channels.findIndex(c => c.id === channelId);
+            if (existingIndex > -1) {
+                // Preserve existing health status unless URL has changed
+                formData.health = channels[existingIndex].url === url ? channels[existingIndex].health : 'unchecked';
+                formData.id = channelId;
+                channels[existingIndex] = formData;
+                showToast(`Updated ${formData.name}`);
+            }
+        } else { // Handle adding a new channel
+            formData.id = Date.now().toString();
             channels.push(formData);
             showToast(`Added ${formData.name}`);
         }
@@ -1344,8 +1480,11 @@
         renderChannels();
         toggleModal('addChannelModal');
         
-        if (currentChannelId === formData.id) loadChannel(formData.id);
+        if (channelId && channelId === currentChannelId) {
+            loadChannel(channelId);
+        }
     }
+
 
     function toggleFavorite(id, e) {
         if(e) e.stopPropagation();
@@ -1364,8 +1503,6 @@
         if (showOnlyFavorites) {
             renderChannels();
         } else {
-            // Robustly find the button: use event target if available, otherwise look it up by ID
-            // We use getElementById to handle IDs with spaces or special characters safely
             const item = document.getElementById(`channel-item-${id}`);
             const btn = (e && e.currentTarget) || (item && item.querySelector('button'));
 
@@ -1402,16 +1539,50 @@
         renderChannels();
     }
 
+    function toggleSort() {
+        const sortModes = ['default', 'health_asc', 'health_desc'];
+        const currentModeIndex = sortModes.indexOf(currentSortMode);
+        currentSortMode = sortModes[(currentModeIndex + 1) % sortModes.length];
+        
+        const btn = document.getElementById('sortBtn');
+        const icons = {
+            'default': 'arrow-down-a-z',
+            'health_asc': 'arrow-up-circle',
+            'health_desc': 'arrow-down-circle'
+        };
+        const titles = {
+            'default': 'Sort Alphabetically',
+            'health_asc': 'Sort by Good Connection',
+            'health_desc': 'Sort by Poor Connection'
+        };
+
+        btn.innerHTML = `<i data-lucide="${icons[currentSortMode]}" class="w-4 h-4"></i>`;
+        btn.title = titles[currentSortMode];
+        lucide.createIcons();
+        renderChannels();
+    }
+
     function renderChannels() {
         const query = els.searchInput.value.toLowerCase();
         
-        const filtered = channels.filter(c => {
+        let filtered = channels.filter(c => {
             const group = c.group || 'Uncategorized';
             const matchesSearch = c.name.toLowerCase().includes(query) || group.toLowerCase().includes(query);
             const matchesGroup = currentFilterGroup === 'all' || group === currentFilterGroup;
             const matchesFav = showOnlyFavorites ? favorites.includes(c.id) : true;
             return matchesSearch && matchesGroup && matchesFav;
         });
+
+        // --- NEW: Sorting Logic ---
+        const healthOrder = { 'good': 1, 'unchecked': 2, 'poor': 3 };
+        if (currentSortMode === 'health_asc') {
+            filtered.sort((a, b) => (healthOrder[a.health] || 3) - (healthOrder[b.health] || 3));
+        } else if (currentSortMode === 'health_desc') {
+            filtered.sort((a, b) => (healthOrder[b.health] || 3) - (healthOrder[a.health] || 3));
+        } else { // default
+            filtered.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
 
         els.channelCount.textContent = `${filtered.length} loaded`;
 
@@ -1420,6 +1591,17 @@
             const isActive = currentChannelId === c.id;
             const group = c.group || 'Uncategorized';
             
+            let healthColor = 'bg-gray-500'; // unchecked
+            let healthTitle = 'Unchecked';
+            if (c.health === 'good') {
+                healthColor = 'bg-green-500';
+                healthTitle = 'Good';
+            }
+            if (c.health === 'poor') {
+                healthColor = 'bg-red-500';
+                healthTitle = 'Poor';
+            }
+
             return `
             <div id="channel-item-${c.id}" onclick="loadChannel('${c.id}')" 
                  class="channel-item cursor-pointer p-3 rounded-xl border border-transparent group relative flex items-center gap-4 mb-1 ${isActive ? 'active' : 'hover:bg-dark-surface/60 hover:border-dark-light/50'}">
@@ -1432,7 +1614,10 @@
                 
                 <div class="flex-1 min-w-0 flex flex-col justify-center">
                     <h4 class="text-sm font-medium transition-colors truncate ${isActive ? 'text-white font-bold' : 'text-gray-300 group-hover:text-white'}">${c.name}</h4>
-                    <p class="text-[11px] truncate transition-colors ${isActive ? 'text-brand-300' : 'text-gray-500 group-hover:text-gray-400'}">${group}</p>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full ${healthColor} ring-1 ring-black/20" title="Health: ${healthTitle}"></span>
+                        <p class="text-[11px] truncate transition-colors ${isActive ? 'text-brand-300' : 'text-gray-500 group-hover:text-gray-400'}">${group}</p>
+                    </div>
                 </div>
                 
                 <button onclick="toggleFavorite('${c.id}', event)" class="p-2 hover:bg-white/10 rounded-full transition-all active:scale-90 ${isFav ? 'text-brand-400 opacity-100' : 'text-gray-600 opacity-0 group-hover:opacity-100'}">
@@ -1453,6 +1638,69 @@
         
         lucide.createIcons();
     }
+    
+    // --- CHANNEL HEALTH ---
+    async function updateChannelHealth(channelId, status) {
+        const channelIndex = channels.findIndex(c => c.id === channelId);
+        if (channelIndex > -1) {
+            if (channels[channelIndex].health !== status) {
+                channels[channelIndex].health = status;
+                saveToLocal();
+                // Update just this one item in the DOM for efficiency
+                const item = document.getElementById(`channel-item-${channelId}`);
+                if (item) {
+                    const dot = item.querySelector('.w-2.h-2');
+                    if(dot) {
+                        dot.className = 'w-2 h-2 rounded-full ring-1 ring-black/20 ';
+                        if (status === 'good') dot.classList.add('bg-green-500');
+                        else if (status === 'poor') dot.classList.add('bg-red-500');
+                        else dot.classList.add('bg-gray-500');
+                    }
+                }
+            }
+        }
+    }
+
+    async function scanAllChannelHealth() {
+        const scanBtn = document.getElementById('scanHealthBtn');
+        const scanStatus = document.getElementById('scanHealthStatus');
+        
+        scanStatus.classList.remove('hidden');
+
+        scanBtn.disabled = true;
+        scanBtn.innerHTML = `<div class="mini-loader"></div>`;
+
+        let online = 0;
+        let offline = 0;
+        const total = channels.length;
+
+        for (let i = 0; i < total; i++) {
+            const channel = channels[i];
+            scanStatus.textContent = `Scanning ${i + 1} of ${total}: ${channel.name}`;
+            try {
+                // Use a short timeout to avoid getting stuck on unresponsive URLs
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                // A HEAD request is a lightweight way to check if a URL is reachable.
+                // It doesn't guarantee the stream works, but it's a good first pass.
+                await fetch(channel.url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' });
+                clearTimeout(timeoutId);
+                await updateChannelHealth(channel.id, 'good');
+                online++;
+            } catch (error) {
+                await updateChannelHealth(channel.id, 'poor');
+                offline++;
+            }
+        }
+        
+        scanStatus.textContent = `Scan complete: ${online} online, ${offline} offline.`;
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = `<i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan`;
+        lucide.createIcons();
+        showToast("Channel health scan finished.");
+        renderChannels(); // Re-render to reflect new health statuses
+    }
+
 
     // --- PLAYER ENGINE ---
     const hlsConfig = {
@@ -1464,13 +1712,24 @@
 
     function getCurrentChannelList() {
         const query = els.searchInput.value.toLowerCase();
-        return channels.filter(c => {
+        let list = channels.filter(c => {
             const group = c.group || 'Uncategorized';
             const matchesSearch = c.name.toLowerCase().includes(query) || group.toLowerCase().includes(query);
             const matchesGroup = currentFilterGroup === 'all' || group === currentFilterGroup;
             const matchesFav = showOnlyFavorites ? favorites.includes(c.id) : true;
             return matchesSearch && matchesGroup && matchesFav;
         });
+        
+        // --- Apply same sorting as main list ---
+        const healthOrder = { 'good': 1, 'unchecked': 2, 'poor': 3 };
+        if (currentSortMode === 'health_asc') {
+            list.sort((a, b) => (healthOrder[a.health] || 3) - (healthOrder[b.health] || 3));
+        } else if (currentSortMode === 'health_desc') {
+            list.sort((a, b) => (healthOrder[b.health] || 3) - (healthOrder[a.health] || 3));
+        } else { // default
+            list.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        return list;
     }
 
     function loadNextChannel() {
@@ -1501,13 +1760,11 @@
             toggleSidebar();
         }
 
-        // Surgically update active state instead of full re-render
         if (currentChannelId) {
             document.getElementById(`channel-item-${currentChannelId}`)?.classList.remove('active');
         }
         document.getElementById(`channel-item-${id}`)?.classList.add('active');
         
-        // Also update fullscreen menu active state
         const fsActiveOld = document.querySelector('.fs-channel-item.active');
         if(fsActiveOld) fsActiveOld.classList.remove('active');
         const fsActiveNew = document.getElementById(`fs-channel-item-${id}`);
@@ -1561,9 +1818,8 @@
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 els.loadingStatus.textContent = "Stream manifest loaded, preparing video...";
                 video.play().catch(() => {});
-                buildPlayerControls(); // Rebuild controls for audio/caption tracks
+                buildPlayerControls(); 
                 
-                // Auto-select preferred audio language
                 const preferredTrack = hls.audioTracks.findIndex(t => t.lang === settings.preferredLang);
                 if (preferredTrack > -1) {
                     hls.audioTrack = preferredTrack;
@@ -1578,47 +1834,34 @@
             
             hls.on(Hls.Events.ERROR, (event, data) => {
                 console.error('HLS.js error:', data.details, 'Fatal:', data.fatal);
+                updateChannelHealth(channel.id, 'poor');
 
                 if (data.fatal) {
-                    const failedChannelName = channel ? channel.name : 'the stream';
-
+                    let errorMessage = `Could not play "${channel.name}". `;
                     switch (data.details) {
-                        // These errors are often recoverable or temporary network issues.
-                        case Hls.ErrorDetails.NETWORK_ERROR:
-                            console.log('Network error, attempting to recover...');
-                            els.loading.style.display = 'flex';
-                            els.loadingTitle.textContent = 'Reconnecting...';
-                            els.loadingStatus.textContent = 'Network connection lost. Attempting to reconnect.';
-                            updateNetworkHealth('poor');
-                            hls.startLoad(); // Try to restart loading
-                            break;
-
-                        case Hls.ErrorDetails.MEDIA_ERROR:
-                            console.log('Media error, attempting to recover...');
-                            els.loading.style.display = 'flex';
-                            els.loadingTitle.textContent = 'Recovering Stream...';
-                            els.loadingStatus.textContent = 'A media error occurred. Attempting to recover.';
-                            updateNetworkHealth('fair');
-                            hls.recoverMediaError();
-                            break;
-
-                        // These errors are definitive failures.
-                        // MANIFEST_LOAD_ERROR means the URL failed (e.g., 404).
-                        // MANIFEST_PARSING_ERROR means the URL works, but the file is not a valid stream.
                         case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
                         case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
-                        default:
-                            console.log('Fatal stream error, stopping player.');
-                            hls.destroy();
-                            // This is the most accurate error message we can show.
-                            showError(`Could not play "${failedChannelName}". The URL may be incorrect, the stream may be offline, or the file is not a valid video stream.`);
+                            errorMessage += "The stream is offline or the URL is incorrect.";
                             break;
+                        case Hls.ErrorDetails.NETWORK_ERROR:
+                            errorMessage += "A network error occurred. Please check your connection.";
+                            break;
+                        case Hls.ErrorDetails.MEDIA_ERROR:
+                             errorMessage += "A media error occurred. The stream may be corrupted.";
+                             break;
+                        default:
+                            errorMessage += "An unknown error occurred.";
                     }
+                    hls.destroy();
+                    showError(errorMessage);
                 }
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = channel.url;
-            video.addEventListener('error', () => showError("Native HLS playback is not supported for this stream."));
+            video.addEventListener('error', () => {
+                updateChannelHealth(channel.id, 'poor');
+                showError("Native HLS playback is not supported for this stream.")
+            });
         }
     }
 
@@ -1679,7 +1922,6 @@
         els.desktopControls.innerHTML = desktopHTML;
         els.mobileMenuOptions.innerHTML = mobileHTML;
         
-        // Dynamic state updates
         if (hasCaptions) {
             document.getElementById('badge-captions').classList.toggle('hidden', !isCaptionsOn);
             document.getElementById('desktop-btn-captions').classList.toggle('text-brand-400', isCaptionsOn);
@@ -1784,7 +2026,6 @@
         if (isFullscreenMenuOpen) {
             populateFullscreenMenu();
             els.fullscreenMenu.classList.add('open');
-            // Prevent UI from hiding while menu is open
             clearTimeout(inactivityTimer);
         } else {
             els.fullscreenMenu.classList.remove('open');
@@ -1817,7 +2058,7 @@
     // --- CAPTIONS & AUDIO TRACKS ---
     function toggleCaptions() {
         isCaptionsOn = !isCaptionsOn;
-        buildPlayerControls(); // Re-render to update state
+        buildPlayerControls(); 
         showToast(`Captions ${isCaptionsOn ? 'ON' : 'OFF'}`);
 
         for (let i = 0; i < video.textTracks.length; i++) {
@@ -1844,9 +2085,7 @@
     }
     
     function showAudioTrackMenu() {
-        // This function will just open the mobile menu, which now contains audio options.
-        // On desktop, we'll create a dropdown. For now, a simple list in the mobile menu is sufficient.
-        if (window.innerWidth < 1024) { // lg breakpoint
+        if (window.innerWidth < 1024) { 
              if (!mobileMenuOpen) {
                 let audioOptionsHTML = '';
                 hls.audioTracks.forEach((track, index) => {
@@ -1864,8 +2103,6 @@
                 toggleMobileMenu();
             }
         } else {
-            // Placeholder for desktop dropdown. Could be implemented with a new modal or popover.
-            // For now, we can use the mobile menu as a quick solution.
              showToast("Audio track selection is available in the 'More' menu on smaller screens.");
         }
     }
@@ -1874,7 +2111,7 @@
     // --- STATS & EVENTS ---
     function toggleStats() {
         if (els.stats.overlay.classList.contains('hidden')) {
-            closeMobileMenu(); // Close mobile menu if open
+            closeMobileMenu(); 
             els.stats.overlay.classList.remove('hidden');
         } else {
             els.stats.overlay.classList.add('hidden');
@@ -1885,7 +2122,6 @@
         let bufferTimeout;
         video.addEventListener('waiting', () => {
             bufferTimeout = setTimeout(() => {
-                // FIX: Do not show loader if Error screen is already visible
                 if (els.error.style.display !== 'none') return;
 
                 els.loading.style.display = 'flex';
@@ -1898,6 +2134,7 @@
             clearTimeout(bufferTimeout);
             els.loading.style.display = 'none';
             updateNetworkHealth('good');
+            updateChannelHealth(currentChannelId, 'good'); // Mark channel as good on successful playback
             document.getElementById('liveBadge').classList.remove('hidden');
             document.getElementById('liveBadge').classList.add('flex');
             document.getElementById('playIcon').setAttribute('data-lucide', 'pause');
@@ -1948,6 +2185,7 @@
                 document.getElementById('deleteBtnContainer').classList.add('hidden');
                 document.getElementById('addChannelTabs').style.display = 'flex';
                 updateLogoPreview();
+                resetUrlValidation();
                 switchAddTab('single');
             }
             delete m.dataset.editing;
@@ -1957,10 +2195,23 @@
         }
     }
 
-    function showConfirmation(title, message, onConfirm) {
+    function showConfirmation(title, message, onConfirm, type = 'danger') {
         els.confirm.title.textContent = title;
         els.confirm.message.innerHTML = message;
+
+        // Reset button colors and icons for different confirmation types
+        if(type === 'danger') {
+            els.confirm.icon.innerHTML = `<i data-lucide="alert-triangle" class="w-8 h-8 text-red-400"></i>`;
+            els.confirm.icon.className = 'bg-red-500/10 p-4 rounded-full mb-5 ring-1 ring-red-500/20 inline-block';
+            els.confirm.okBtn.className = 'flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 rounded-xl text-white transition font-bold shadow-lg shadow-red-500/20 transform active:scale-[0.98]';
+        } else { // e.g., 'warning'
+             els.confirm.icon.innerHTML = `<i data-lucide="trash-2" class="w-8 h-8 text-yellow-400"></i>`;
+             els.confirm.icon.className = 'bg-yellow-500/10 p-4 rounded-full mb-5 ring-1 ring-yellow-500/20 inline-block';
+             els.confirm.okBtn.className = 'flex-1 px-4 py-3 bg-yellow-600 hover:bg-yellow-500 rounded-xl text-white transition font-bold shadow-lg shadow-yellow-500/20 transform active:scale-[0.98]';
+        }
+        lucide.createIcons();
         
+        // Clone and replace buttons to remove old event listeners
         const newOkBtn = els.confirm.okBtn.cloneNode(true);
         els.confirm.okBtn.parentNode.replaceChild(newOkBtn, els.confirm.okBtn);
         els.confirm.okBtn = newOkBtn;
@@ -2002,6 +2253,7 @@
         document.getElementById('deleteBtnContainer').classList.remove('hidden');
         toggleModal('addChannelModal');
         updateLogoPreview();
+        validateUrl(channel.url, true); // Force validation on open
     }
 
     function deleteChannel() {
@@ -2050,7 +2302,7 @@
          document.getElementById('liveBadge').classList.add('hidden');
          updateNetworkHealth('idle');
          updateFavButtonState();
-         buildPlayerControls(); // Reset controls to default state
+         buildPlayerControls(); 
          closeMobileMenu();
     }
 
@@ -2069,7 +2321,7 @@
     function showToast(msg, type = 'success') {
         const t = document.getElementById('toast');
         const iconContainer = document.getElementById('toastIcon');
-        const icon = type === 'success' ? 'check' : 'x';
+        const icon = type === 'success' ? 'check' : 'x-circle';
         const color = type === 'success' ? 'brand' : 'red';
 
         document.getElementById('toastMsg').textContent = msg;
@@ -2098,7 +2350,7 @@
         let count = 0;
         examples.forEach(ex => {
             if(!channels.some(c => c.url === ex.url)) {
-                channels.push({...ex, id: Date.now() + Math.random().toString()});
+                channels.push({...ex, id: Date.now() + Math.random().toString(), health: 'unchecked' });
                 count++;
             }
         });
@@ -2201,7 +2453,8 @@
             name: sharedChannelData.name,
             url: sharedChannelData.url,
             group: sharedChannelData.group || 'Uncategorized',
-            logo: sharedChannelData.logo || ''
+            logo: sharedChannelData.logo || '',
+            health: 'unchecked'
         };
 
         channels.push(newChannel);
@@ -2214,16 +2467,37 @@
     // --- PLAYLIST IMPORT WORKER ---
     function handlePlaylistImport(event) {
         event.preventDefault();
-        const m3uUrl = document.getElementById('inpM3uUrl').value;
-        const smartCleanup = document.getElementById('inpSmartCleanup').checked;
+        const urls = document.getElementById('inpM3uUrl').value.split(',')
+            .map(url => url.trim())
+            .filter(url => url.length > 0);
 
-        if (!m3uUrl) {
-            showToast("M3U Playlist URL is required.", "error");
+        if (urls.length === 0) {
+            showToast("Please enter at least one valid M3U Playlist URL.", "error");
+            return;
+        }
+        
+        const smartCleanup = document.getElementById('inpSmartCleanup').checked;
+        
+        toggleModal('addChannelModal');
+        
+        importQueue = urls.map(url => ({ m3uUrl: url, smartCleanup }));
+        totalImportCount = importQueue.length;
+        totalKept = 0;
+        totalRemoved = 0;
+
+        processImportQueue();
+    }
+
+    function processImportQueue() {
+        if (importQueue.length === 0) {
+            if (totalImportCount > 0) {
+                finishImportQueue();
+            }
             return;
         }
 
-        toggleModal('addChannelModal');
-        startImport({ m3uUrl, smartCleanup });
+        const options = importQueue.shift();
+        startImport(options);
     }
 
     function startImport(options) {
@@ -2232,7 +2506,7 @@
             toggleModal('importProgressModal');
             return;
         }
-
+        
         const workerScript = `
             self.onmessage = async (e) => {
                 const { m3uUrl, smartCleanup, existingUrls } = e.data;
@@ -2243,8 +2517,6 @@
                     
                     const lines = playlistText.split('\\n');
                     const channels = [];
-                    let kept = 0;
-                    let removed = 0;
 
                     for (let i = 0; i < lines.length; i++) {
                         if (lines[i].startsWith('#EXTINF:')) {
@@ -2262,47 +2534,47 @@
                             const groupMatch = info.match(/group-title="([^"]*)"/);
                             const group = groupMatch ? groupMatch[1] : 'Uncategorized';
 
-                            const idMatch = info.match(/tvg-id="([^"]*)"/);
-                            const tvgId = idMatch ? idMatch[1] : '';
-
-                            channels.push({ name, url, logo, group, tvgId });
+                            channels.push({ name, url, logo, group });
                         }
                     }
 
                     const uniqueChannels = channels.filter(c => !existingUrls.has(c.url));
                     const totalToProcess = uniqueChannels.length;
-                    const validatedChannels = [];
+                    const finalChannels = [];
+                    let kept = 0;
+                    let removed = 0;
 
                     for (let i = 0; i < totalToProcess; i++) {
                         const channel = uniqueChannels[i];
-                        let isValid = true;
+                        let isReachable = true;
 
                         if (smartCleanup) {
                             try {
-                                const res = await fetch(channel.url, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(4000) });
-                                // no-cors means we can't check res.ok, but a failure will throw an error
-                                isValid = true;
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                                await fetch(channel.url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+                                clearTimeout(timeoutId);
+                                isReachable = true;
                             } catch (err) {
-                                isValid = false;
+                                isReachable = false;
                             }
                         }
+                        
+                        const health = isReachable ? 'unchecked' : 'poor';
+                        if (isReachable) kept++; else removed++;
 
-                        if (isValid) {
-                            kept++;
-                            validatedChannels.push({
-                                id: Date.now().toString() + Math.random(),
-                                ...channel
-                            });
-                        } else {
-                            removed++;
-                        }
+                        finalChannels.push({
+                            id: Date.now().toString() + Math.random(),
+                            ...channel,
+                            health: health
+                        });
                         
                         if (i % 20 === 0 || i === totalToProcess - 1) {
                              self.postMessage({ type: 'progress', kept, removed, total: totalToProcess });
                         }
                     }
 
-                    self.postMessage({ type: 'complete', channels: validatedChannels, kept, removed });
+                    self.postMessage({ type: 'complete', channels: finalChannels, kept, removed });
 
                 } catch (error) {
                     self.postMessage({ type: 'error', message: error.message });
@@ -2312,8 +2584,14 @@
         const blob = new Blob([workerScript], { type: 'application/javascript' });
         importWorker = new Worker(URL.createObjectURL(blob));
 
-        resetImportProgressUI();
-        toggleModal('importProgressModal');
+        if (totalImportCount <= 1) {
+            resetImportProgressUI();
+            toggleModal('importProgressModal');
+        } else {
+            const currentImportNum = totalImportCount - importQueue.length;
+            els.importProgress.queueStatus.textContent = `Importing playlist ${currentImportNum} of ${totalImportCount}...`;
+            els.importProgress.queueStatus.classList.remove('hidden');
+        }
 
         importWorker.onmessage = (e) => {
             const { type, ...data } = e.data;
@@ -2322,7 +2600,7 @@
                     updateImportProgress(data);
                     break;
                 case 'complete':
-                    finishImport(data);
+                    finishSingleImport(data);
                     break;
                 case 'error':
                     showToast(`Import failed: ${data.message}`, 'error');
@@ -2339,6 +2617,7 @@
         const p = els.importProgress;
         p.title.textContent = "Importing Playlist...";
         p.status.textContent = "Parsing and validating channels. This may take a few moments...";
+        p.queueStatus.classList.add('hidden');
         p.percent.textContent = "0%";
         p.bar.style.width = "0%";
         p.kept.textContent = "0";
@@ -2358,27 +2637,37 @@
         
         p.percent.textContent = `${percentage}%`;
         p.bar.style.width = `${percentage}%`;
-        p.kept.textContent = kept;
-        p.removed.textContent = removed;
+        p.kept.textContent = totalKept + kept;
+        p.removed.textContent = totalRemoved + removed;
         p.footerText.textContent = `${percentage}% (${processed}/${total})`;
     }
 
-    function finishImport({ channels: newChannels, kept, removed }) {
-        const p = els.importProgress;
-        p.title.textContent = "Import Complete!";
-        p.status.textContent = `Added ${kept} new channels to your library. ${removed} invalid streams were discarded.`;
-        p.hideBtn.classList.add('hidden');
-        p.cancelBtn.classList.add('hidden');
-        p.doneBtn.classList.remove('hidden');
-        
-        channels.push(...newChannels);
-        saveToLocal();
-        renderChannels();
-
+    function finishSingleImport({ channels: newChannels, kept, removed }) {
         if (importWorker) {
             importWorker.terminate();
             importWorker = null;
         }
+
+        totalKept += kept;
+        totalRemoved += removed;
+
+        channels.push(...newChannels);
+        saveToLocal();
+        renderChannels();
+        
+        processImportQueue();
+    }
+
+    function finishImportQueue() {
+        const p = els.importProgress;
+        p.title.textContent = "Import Complete!";
+        p.status.textContent = `Added ${totalKept + totalRemoved} new channels. ${totalRemoved} were marked as 'Poor' health.`;
+        p.queueStatus.classList.add('hidden');
+        p.hideBtn.classList.add('hidden');
+        p.cancelBtn.classList.add('hidden');
+        p.doneBtn.classList.remove('hidden');
+        
+        totalImportCount = 0; // Reset for next time
 
         setTimeout(() => {
             p.footer.classList.add('hidden');
@@ -2391,13 +2680,14 @@
         if(importWorker) {
             importWorker.terminate();
             importWorker = null;
-            showToast("Import cancelled.", "error");
-            toggleModal('importProgressModal');
-            els.importProgress.footer.classList.add('hidden');
-            els.importProgress.defaultFooter.classList.remove('hidden');
         }
+        importQueue = [];
+        totalImportCount = 0;
+        showToast("Import cancelled.", "error");
+        toggleModal('importProgressModal');
+        els.importProgress.footer.classList.add('hidden');
+        els.importProgress.defaultFooter.classList.remove('hidden');
     }
-
 
     // --- DATA MANAGEMENT ---
     function exportPlaylists() {
@@ -2444,7 +2734,8 @@
                             name: newChannel.name,
                             url: newChannel.url,
                             group: newChannel.group,
-                            logo: newChannel.logo
+                            logo: newChannel.logo,
+                            health: newChannel.health || 'unchecked'
                         });
                         existingUrls.add(newChannel.url);
                         importedCount++;
@@ -2467,11 +2758,38 @@
             } catch (error) {
                 showToast(`Import failed: ${error.message}`, 'error');
             } finally {
-                // Reset file input to allow importing the same file again
                 event.target.value = '';
             }
         };
         reader.readAsText(file);
+    }
+    
+    function deletePoorChannels() {
+        const poorChannels = channels.filter(c => c.health === 'poor');
+        if (poorChannels.length === 0) {
+            showToast("No channels are marked as 'Poor'. Run a health scan first.", "error");
+            return;
+        }
+
+        showConfirmation(
+            'Delete Poor Channels?',
+            `This will permanently remove <strong>${poorChannels.length}</strong> channel(s) marked with 'Poor' health. This action cannot be undone.`,
+            () => {
+                const poorChannelIds = new Set(poorChannels.map(c => c.id));
+                channels = channels.filter(c => c.health !== 'poor');
+                favorites = favorites.filter(id => !poorChannelIds.has(id));
+
+                if (poorChannelIds.has(currentChannelId)) {
+                    stopPlayer();
+                }
+
+                saveToLocal();
+                renderChannels();
+                toggleModal('settingsModal');
+                showToast(`Removed ${poorChannels.length} poor-health channels.`, 'success');
+            },
+            'warning' 
+        );
     }
     
     function resetAllData() {
@@ -2489,6 +2807,575 @@
             }
         );
     }
+    
+    // --- SINGLE STREAM URL VALIDATION ---
+    function setupUrlValidation() {
+        els.inpUrl.addEventListener('input', (e) => {
+            clearTimeout(urlValidationTimeout);
+            const url = e.target.value;
+            if (!url) {
+                resetUrlValidation();
+                return;
+            }
+            // Show spinner immediately for better UX
+            setValidationState('loading');
+            urlValidationTimeout = setTimeout(() => {
+                validateUrl(url);
+            }, 500); // Debounce
+        });
+    }
+
+    function resetUrlValidation() {
+        setValidationState('none');
+        els.urlValidationMessage.textContent = '';
+        els.saveChannelBtn.disabled = false;
+        els.inpUrl.classList.remove('border-red-500/50', 'border-green-500/50');
+    }
+
+    async function validateUrl(url, isInitial = false) {
+        const urlRegex = /^(https?:\/\/[^\s$.?#].[^\s]*)$/i;
+        if (!urlRegex.test(url)) {
+            setValidationState('error', 'Invalid URL format.');
+            return;
+        }
+
+        const isStream = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('.m3u');
+        if (!isStream) {
+            setValidationState('error', 'URL must be a .m3u8 or .m3u link.');
+            return;
+        }
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            // Using HEAD with no-cors is the best we can do client-side.
+            // It confirms the domain/path is reachable, not that the stream is valid.
+            await fetch(url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' });
+            clearTimeout(timeoutId);
+            setValidationState('success', 'URL is reachable!');
+        } catch (error) {
+            // This catches DNS errors, timeouts, etc.
+             if (isInitial) {
+                 setValidationState('error', 'Could not reach URL. It might be offline.');
+             } else {
+                 setValidationState('error', 'Could not reach URL. Check the link or try again.');
+             }
+        }
+    }
+    
+    function setValidationState(state, message = '') {
+        const statusEl = els.urlValidationStatus;
+        const msgEl = els.urlValidationMessage;
+        const inputEl = els.inpUrl;
+        const saveBtn = els.saveChannelBtn;
+
+        statusEl.innerHTML = '';
+        inputEl.classList.remove('border-red-500/50', 'border-green-500/50');
+        msgEl.className = 'text-xs mt-1.5 ml-1 h-3'; // Reset classes
+
+        switch(state) {
+            case 'loading':
+                statusEl.innerHTML = `<div class="tiny-loader"></div>`;
+                saveBtn.disabled = true;
+                break;
+            case 'success':
+                statusEl.innerHTML = `<i data-lucide="check" class="w-5 h-5 text-green-500"></i>`;
+                msgEl.textContent = message;
+                msgEl.classList.add('text-green-500/80');
+                inputEl.classList.add('border-green-500/50');
+                saveBtn.disabled = false;
+                lucide.createIcons();
+                break;
+            case 'error':
+                 statusEl.innerHTML = `<i data-lucide="x" class="w-5 h-5 text-red-500"></i>`;
+                 msgEl.textContent = message;
+                 msgEl.classList.add('text-red-400/80');
+                 inputEl.classList.add('border-red-500/50');
+                 saveBtn.disabled = true;
+                 lucide.createIcons();
+                break;
+            case 'none':
+            default:
+                saveBtn.disabled = document.getElementById('channelId').value ? false : true;
+                break;
+        }
+    }
+
+
+    // --- BROWSE PLAYLISTS MODAL LOGIC ---
+    function switchBrowseTab(tabName) {
+        currentBrowseTab = tabName;
+        document.querySelectorAll('.browse-tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(`browse-tab-${tabName}`).classList.add('active');
+        document.getElementById('browseSearchInput').value = '';
+        renderBrowsePlaylists();
+    }
+
+    function renderBrowsePlaylists() {
+        const container = document.getElementById('browsePlaylistsContent');
+        const query = document.getElementById('browseSearchInput').value.toLowerCase();
+        let data = [];
+        
+        switch(currentBrowseTab) {
+            case 'category': data = publicPlaylists.categories; break;
+            case 'language': data = publicPlaylists.languages; break;
+            case 'country': data = publicPlaylists.countries; break;
+            case 'region': data = publicPlaylists.regions; break;
+        }
+
+        const filteredData = data.filter(item => item.name.toLowerCase().includes(query));
+
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">';
+        filteredData.forEach(item => {
+            html += `
+                <div class="bg-dark-bg border border-dark-border rounded-xl p-4 flex flex-col justify-between hover:border-brand-500/50 hover:bg-dark-light transition-all group">
+                    <div>
+                        <div class="flex justify-between items-start">
+                             <h4 class="font-bold text-white mb-1 pr-2">${item.name}</h4>
+                             <span class="text-xs font-mono bg-dark-surface px-2 py-1 rounded-md text-brand-300 border border-dark-light">${item.channels} ch</span>
+                        </div>
+                        <p class="text-xs text-gray-500 font-mono break-all opacity-80 group-hover:opacity-100">${item.url}</p>
+                    </div>
+                    <button onclick="selectPublicPlaylist('${item.url}')" class="mt-4 w-full text-center text-sm font-semibold bg-dark-border hover:bg-brand-600 text-gray-300 hover:text-white rounded-lg py-2 transition-colors active:scale-95">
+                        Add URL
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+        if(filteredData.length === 0){
+             container.innerHTML = `<div class="text-center text-gray-500 pt-10"><i data-lucide="search-x" class="w-10 h-10 mx-auto mb-3 opacity-30"></i><p>No results found.</p></div>`;
+             lucide.createIcons();
+        }
+    }
+
+    function selectPublicPlaylist(url) {
+        const input = document.getElementById('inpM3uUrl');
+        if (input.value.trim().length > 0) {
+            input.value += `, ${url}`;
+        } else {
+            input.value = url;
+        }
+        toggleModal('browsePlaylistsModal');
+        showToast('Playlist URL added!', 'success');
+    }
+
+// --- PUBLIC PLAYLIST DATA ---
+const publicPlaylists = {
+    categories: [
+        { name: 'Auto', channels: '15', url: 'https://iptv-org.github.io/iptv/categories/auto.m3u' },
+        { name: 'Animation', channels: '45', url: 'https://iptv-org.github.io/iptv/categories/animation.m3u' },
+        { name: 'Business', channels: '49', url: 'https://iptv-org.github.io/iptv/categories/business.m3u' },
+        { name: 'Classic', channels: '53', url: 'https://iptv-org.github.io/iptv/categories/classic.m3u' },
+        { name: 'Comedy', channels: '51', url: 'https://iptv-org.github.io/iptv/categories/comedy.m3u' },
+        { name: 'Cooking', channels: '21', url: 'https://iptv-org.github.io/iptv/categories/cooking.m3u' },
+        { name: 'Culture', channels: '52', url: 'https://iptv-org.github.io/iptv/categories/culture.m3u' },
+        { name: 'Documentary', channels: '59', url: 'https://iptv-org.github.io/iptv/categories/documentary.m3u' },
+        { name: 'Education', channels: '109', url: 'https://iptv-org.github.io/iptv/categories/education.m3u' },
+        { name: 'Entertainment', channels: '283', url: 'https://iptv-org.github.io/iptv/categories/entertainment.m3u' },
+        { name: 'Family', channels: '38', url: 'https://iptv-org.github.io/iptv/categories/family.m3u' },
+        { name: 'General', channels: '847', url: 'https://iptv-org.github.io/iptv/categories/general.m3u' },
+        { name: 'Kids', channels: '174', url: 'https://iptv-org.github.io/iptv/categories/kids.m3u' },
+        { name: 'Legislative', channels: '127', url: 'https://iptv-org.github.io/iptv/categories/legislative.m3u' },
+        { name: 'Lifestyle', channels: '70', url: 'https://iptv-org.github.io/iptv/categories/lifestyle.m3u' },
+        { name: 'Movies', channels: '265', url: 'https://iptv-org.github.io/iptv/categories/movies.m3u' },
+        { name: 'Music', channels: '396', url: 'https://iptv-org.github.io/iptv/categories/music.m3u' },
+        { name: 'News', channels: '502', url: 'https://iptv-org.github.io/iptv/categories/news.m3u' },
+        { name: 'Outdoor', channels: '42', url: 'https://iptv-org.github.io/iptv/categories/outdoor.m3u' },
+        { name: 'Relax', channels: '15', url: 'https://iptv-org.github.io/iptv/categories/relax.m3u' },
+        { name: 'Religious', channels: '310', url: 'https://iptv-org.github.io/iptv/categories/religious.m3u' },
+        { name: 'Series', channels: '166', url: 'https://iptv-org.github.io/iptv/categories/series.m3u' },
+        { name: 'Science', channels: '23', url: 'https://iptv-org.github.io/iptv/categories/science.m3u' },
+        { name: 'Shop', channels: '70', url: 'https://iptv-org.github.io/iptv/categories/shop.m3u' },
+        { name: 'Sports', channels: '185', url: 'https://iptv-org.github.io/iptv/categories/sports.m3u' },
+        { name: 'Travel', channels: '29', url: 'https://iptv-org.github.io/iptv/categories/travel.m3u' },
+        { name: 'Weather', channels: '14', url: 'https://iptv-org.github.io/iptv/categories/weather.m3u' },
+        { name: 'Undefined', channels: '4650', url: 'https://iptv-org.github.io/iptv/categories/undefined.m3u' }
+    ],
+    languages: [
+        { name: 'Albanian', channels: '59', url: 'https://iptv-org.github.io/iptv/languages/sqi.m3u' },
+        { name: 'Amharic', channels: '8', url: 'https://iptv-org.github.io/iptv/languages/amh.m3u' },
+        { name: 'Arabic', channels: '328', url: 'https://iptv-org.github.io/iptv/languages/ara.m3u' },
+        { name: 'Armenian', channels: '28', url: 'https://iptv-org.github.io/iptv/languages/hye.m3u' },
+        { name: 'Assamese', channels: '2', url: 'https://iptv-org.github.io/iptv/languages/asm.m3u' },
+        { name: 'Assyrian Neo-Aramaic', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/aii.m3u' },
+        { name: 'Azerbaijani', channels: '23', url: 'https://iptv-org.github.io/iptv/languages/aze.m3u' },
+        { name: 'Bashkir', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/bak.m3u' },
+        { name: 'Basque', channels: '6', url: 'https://iptv-org.github.io/iptv/languages/eus.m3u' },
+        { name: 'Belarusian', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/bel.m3u' },
+        { name: 'Bengali', channels: '36', url: 'https://iptv-org.github.io/iptv/languages/ben.m3u' },
+        { name: 'Bosnian', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/bos.m3u' },
+        { name: 'Bulgarian', channels: '27', url: 'https://iptv-org.github.io/iptv/languages/bul.m3u' },
+        { name: 'Burmese', channels: '16', url: 'https://iptv-org.github.io/iptv/languages/mya.m3u' },
+        { name: 'Catalan', channels: '30', url: 'https://iptv-org.github.io/iptv/languages/cat.m3u' },
+        { name: 'Chinese', channels: '185', url: 'https://iptv-org.github.io/iptv/languages/zho.m3u' },
+        { name: 'Croatian', channels: '13', url: 'https://iptv-org.github.io/iptv/languages/hrv.m3u' },
+        { name: 'Czech', channels: '31', url: 'https://iptv-org.github.io/iptv/languages/ces.m3u' },
+        { name: 'Danish', channels: '13', url: 'https://iptv-org.github.io/iptv/languages/dan.m3u' },
+        { name: 'Dhivehi', channels: '2', url: 'https://iptv-org.github.io/iptv/languages/div.m3u' },
+        { name: 'Dimili', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/zza.m3u' },
+        { name: 'Dutch', channels: '115', url: 'https://iptv-org.github.io/iptv/languages/nld.m3u' },
+        { name: 'English', channels: '2016', url: 'https://iptv-org.github.io/iptv/languages/eng.m3u' },
+        { name: 'Estonian', channels: '6', url: 'https://iptv-org.github.io/iptv/languages/est.m3u' },
+        { name: 'Faroese', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/fao.m3u' },
+        { name: 'Fataleka', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/far.m3u' },
+        { name: 'Finnish', channels: '23', url: 'https://iptv-org.github.io/iptv/languages/fin.m3u' },
+        { name: 'French', channels: '243', url: 'https://iptv-org.github.io/iptv/languages/fra.m3u' },
+        { name: 'Galician', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/glg.m3u' },
+        { name: 'Galolen', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/gal.m3u' },
+        { name: 'Georgian', channels: '8', url: 'https://iptv-org.github.io/iptv/languages/kat.m3u' },
+        { name: 'German', channels: '261', url: 'https://iptv-org.github.io/iptv/languages/deu.m3u' },
+        { name: 'Greek', channels: '91', url: 'https://iptv-org.github.io/iptv/languages/ell.m3u' },
+        { name: 'Greenlandic', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/kal.m3u' },
+        { name: 'Gujarati', channels: '2', url: 'https://iptv-org.github.io/iptv/languages/guj.m3u' },
+        { name: 'Hebrew', channels: '10', url: 'https://iptv-org.github.io/iptv/languages/heb.m3u' },
+        { name: 'Hindi', channels: '54', url: 'https://iptv-org.github.io/iptv/languages/hin.m3u' },
+        { name: 'Hungarian', channels: '74', url: 'https://iptv-org.github.io/iptv/languages/hun.m3u' },
+        { name: 'Icelandic', channels: '4', url: 'https://iptv-org.github.io/iptv/languages/isl.m3u' },
+        { name: 'Indonesian', channels: '137', url: 'https://iptv-org.github.io/iptv/languages/ind.m3u' },
+        { name: 'Inuktitut', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/iku.m3u' },
+        { name: 'Irish', channels: '4', url: 'https://iptv-org.github.io/iptv/languages/gle.m3u' },
+        { name: 'Italian', channels: '325', url: 'https://iptv-org.github.io/iptv/languages/ita.m3u' },
+        { name: 'Japanese', channels: '51', url: 'https://iptv-org.github.io/iptv/languages/jpn.m3u' },
+        { name: 'Javanese', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/jav.m3u' },
+        { name: 'Kannada', channels: '5', url: 'https://iptv-org.github.io/iptv/languages/kan.m3u' },
+        { name: 'Kazakh', channels: '15', url: 'https://iptv-org.github.io/iptv/languages/kaz.m3u' },
+        { name: 'Khmer', channels: '12', url: 'https://iptv-org.github.io/iptv/languages/khm.m3u' },
+        { name: 'Kinyarwanda', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/kin.m3u' },
+        { name: 'Korean', channels: '86', url: 'https://iptv-org.github.io/iptv/languages/kor.m3u' },
+        { name: 'Kurdish', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/kur.m3u' },
+        { name: 'Lao', channels: '9', url: 'https://iptv-org.github.io/iptv/languages/lao.m3u' },
+        { name: 'Latvian', channels: '10', url: 'https://iptv-org.github.io/iptv/languages/lav.m3u' },
+        { name: 'Letzeburgesch', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/ltz.m3u' },
+        { name: 'Lithuanian', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/lit.m3u' },
+        { name: 'Macedonian', channels: '34', url: 'https://iptv-org.github.io/iptv/languages/mkd.m3u' },
+        { name: 'Malay', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/msa.m3u' },
+        { name: 'Malayalam', channels: '40', url: 'https://iptv-org.github.io/iptv/languages/mal.m3u' },
+        { name: 'Maltese', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/mlt.m3u' },
+        { name: 'Mandarin Chinese', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/cmn.m3u' },
+        { name: 'Marathi', channels: '2', url: 'https://iptv-org.github.io/iptv/languages/mar.m3u' },
+        { name: 'Min Nan Chinese', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/nan.m3u' },
+        { name: 'Mongolian', channels: '17', url: 'https://iptv-org.github.io/iptv/languages/mon.m3u' },
+        { name: 'Nepali', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/nep.m3u' },
+        { name: 'Norwegian', channels: '7', url: 'https://iptv-org.github.io/iptv/languages/nor.m3u' },
+        { name: 'Norwegian Bokmål', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/nob.m3u' },
+        { name: 'Oriya', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/ori.m3u' },
+        { name: 'Oromo', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/orm.m3u' },
+        { name: 'Panjabi', channels: '5', url: 'https://iptv-org.github.io/iptv/languages/pan.m3u' },
+        { name: 'Papiamento', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/pap.m3u' },
+        { name: 'Pashto', channels: '12', url: 'https://iptv-org.github.io/iptv/languages/pus.m3u' },
+        { name: 'Persian', channels: '60', url: 'https://iptv-org.github.io/iptv/languages/fas.m3u' },
+        { name: 'Polish', channels: '51', url: 'https://iptv-org.github.io/iptv/languages/pol.m3u' },
+        { name: 'Portuguese', channels: '328', url: 'https://iptv-org.github.io/iptv/languages/por.m3u' },
+        { name: 'Romanian', channels: '117', url: 'https://iptv-org.github.io/iptv/languages/ron.m3u' },
+        { name: 'Romany', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/rom.m3u' },
+        { name: 'Russian', channels: '284', url: 'https://iptv-org.github.io/iptv/languages/rus.m3u' },
+        { name: 'Serbian', channels: '79', url: 'https://iptv-org.github.io/iptv/languages/srp.m3u' },
+        { name: 'Serbo-Croatian', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/hbs.m3u' },
+        { name: 'Sindhi', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/snd.m3u' },
+        { name: 'Sinhala', channels: '4', url: 'https://iptv-org.github.io/iptv/languages/sin.m3u' },
+        { name: 'Slovak', channels: '39', url: 'https://iptv-org.github.io/iptv/languages/slk.m3u' },
+        { name: 'Slovenian', channels: '11', url: 'https://iptv-org.github.io/iptv/languages/slv.m3u' },
+        { name: 'Somali', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/som.m3u' },
+        { name: 'Spanish', channels: '1623', url: 'https://iptv-org.github.io/iptv/languages/spa.m3u' },
+        { name: 'Swahili', channels: '2', url: 'https://iptv-org.github.io/iptv/languages/swa.m3u' },
+        { name: 'Swedish', channels: '16', url: 'https://iptv-org.github.io/iptv/languages/swe.m3u' },
+        { name: 'Tagalog', channels: '9', url: 'https://iptv-org.github.io/iptv/languages/tgl.m3u' },
+        { name: 'Tajik', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/tgk.m3u' },
+        { name: 'Tamil', channels: '35', url: 'https://iptv-org.github.io/iptv/languages/tam.m3u' },
+        { name: 'Telugu', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/tel.m3u' },
+        { name: 'Tetum', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/tet.m3u' },
+        { name: 'Thai', channels: '68', url: 'https://iptv-org.github.io/iptv/languages/tha.m3u' },
+        { name: 'Turkish', channels: '197', url: 'https://iptv-org.github.io/iptv/languages/tur.m3u' },
+        { name: 'Turkmen', channels: '7', url: 'https://iptv-org.github.io/iptv/languages/tuk.m3u' },
+        { name: 'Ukrainian', channels: '48', url: 'https://iptv-org.github.io/iptv/languages/ukr.m3u' },
+        { name: 'Urdu', channels: '24', url: 'https://iptv-org.github.io/iptv/languages/urd.m3u' },
+        { name: 'Uzbek', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/uzb.m3u' },
+        { name: 'Vietnamese', channels: '56', url: 'https://iptv-org.github.io/iptv/languages/vie.m3u' },
+        { name: 'Welsh', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/cym.m3u' },
+        { name: 'Western Frisian', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/fry.m3u' },
+        { name: 'Wolof', channels: '3', url: 'https://iptv-org.github.io/iptv/languages/wol.m3u' },
+        { name: 'Yucatec Maya', channels: '1', url: 'https://iptv-org.github.io/iptv/languages/yua.m3u' },
+        { name: 'Yue Chinese', channels: '10', url: 'https://iptv-org.github.io/iptv/languages/yue.m3u' },
+        { name: 'Undefined', channels: '1238', url: 'https://iptv-org.github.io/iptv/languages/undefined.m3u' }
+    ],
+    countries: [
+        { name: 'Afghanistan', channels: '19', url: 'https://iptv-org.github.io/iptv/countries/af.m3u' },
+        { name: 'Albania', channels: '38', url: 'https://iptv-org.github.io/iptv/countries/al.m3u' },
+        { name: 'Algeria', channels: '42', url: 'https://iptv-org.github.io/iptv/countries/dz.m3u' },
+        { name: 'American Samoa', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/as.m3u' },
+        { name: 'Andorra', channels: '17', url: 'https://iptv-org.github.io/iptv/countries/ad.m3u' },
+        { name: 'Angola', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/ao.m3u' },
+        { name: 'Anguilla', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/ai.m3u' },
+        { name: 'Antigua and Barbuda', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/ag.m3u' },
+        { name: 'Argentina', channels: '282', url: 'https://iptv-org.github.io/iptv/countries/ar.m3u' },
+        { name: 'Armenia', channels: '40', url: 'https://iptv-org.github.io/iptv/countries/am.m3u' },
+        { name: 'Aruba', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/aw.m3u' },
+        { name: 'Australia', channels: '39', url: 'https://iptv-org.github.io/iptv/countries/au.m3u' },
+        { name: 'Austria', channels: '48', url: 'https://iptv-org.github.io/iptv/countries/at.m3u' },
+        { name: 'Azerbaijan', channels: '34', url: 'https://iptv-org.github.io/iptv/countries/az.m3u' },
+        { name: 'Bahamas', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/bs.m3u' },
+        { name: 'Bahrain', channels: '37', url: 'https://iptv-org.github.io/iptv/countries/bh.m3u' },
+        { name: 'Bangladesh', channels: '25', url: 'https://iptv-org.github.io/iptv/countries/bd.m3u' },
+        { name: 'Barbados', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/bb.m3u' },
+        { name: 'Belarus', channels: '38', url: 'https://iptv-org.github.io/iptv/countries/by.m3u' },
+        { name: 'Belgium', channels: '59', url: 'https://iptv-org.github.io/iptv/countries/be.m3u' },
+        { name: 'Belize', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/bz.m3u' },
+        { name: 'Benin', channels: '13', url: 'https://iptv-org.github.io/iptv/countries/bj.m3u' },
+        { name: 'Bermuda', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/bm.m3u' },
+        { name: 'Bhutan', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/bt.m3u' },
+        { name: 'Bolivia', channels: '85', url: 'https://iptv-org.github.io/iptv/countries/bo.m3u' },
+        { name: 'Bosnia and Herzegovina', channels: '29', url: 'https://iptv-org.github.io/iptv/countries/ba.m3u' },
+        { name: 'Botswana', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/bw.m3u' },
+        { name: 'Bouvet Island', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/bv.m3u' },
+        { name: 'Brazil', channels: '303', url: 'https://iptv-org.github.io/iptv/countries/br.m3u' },
+        { name: 'British Virgin Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/vg.m3u' },
+        { name: 'Brunei', channels: '32', url: 'https://iptv-org.github.io/iptv/countries/bn.m3u' },
+        { name: 'Bulgaria', channels: '34', url: 'https://iptv-org.github.io/iptv/countries/bg.m3u' },
+        { name: 'Burkina Faso', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/bf.m3u' },
+        { name: 'Burundi', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/bi.m3u' },
+        { name: 'Cambodia', channels: '44', url: 'https://iptv-org.github.io/iptv/countries/kh.m3u' },
+        { name: 'Cameroon', channels: '11', url: 'https://iptv-org.github.io/iptv/countries/cm.m3u' },
+        { name: 'Canada', channels: '123', url: 'https://iptv-org.github.io/iptv/countries/ca.m3u' },
+        { name: 'Cape Verde', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/cv.m3u' },
+        { name: 'Cayman Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/ky.m3u' },
+        { name: 'Central African Republic', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/cf.m3u' },
+        { name: 'Chad', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/td.m3u' },
+        { name: 'Chile', channels: '256', url: 'https://iptv-org.github.io/iptv/countries/cl.m3u' },
+        { name: 'China', channels: '634', url: 'https://iptv-org.github.io/iptv/countries/cn.m3u' },
+        { name: 'Colombia', channels: '118', url: 'https://iptv-org.github.io/iptv/countries/co.m3u' },
+        { name: 'Comoros', channels: '34', url: 'https://iptv-org.github.io/iptv/countries/km.m3u' },
+        { name: 'Cook Islands', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/ck.m3u' },
+        { name: 'Costa Rica', channels: '96', url: 'https://iptv-org.github.io/iptv/countries/cr.m3u' },
+        { name: 'Croatia', channels: '28', url: 'https://iptv-org.github.io/iptv/countries/hr.m3u' },
+        { name: 'Cuba', channels: '58', url: 'https://iptv-org.github.io/iptv/countries/cu.m3u' },
+        { name: 'Curacao', channels: '10', url: 'https://iptv-org.github.io/iptv/countries/cw.m3u' },
+        { name: 'Cyprus', channels: '35', url: 'https://iptv-org.github.io/iptv/countries/cy.m3u' },
+        { name: 'Czech Republic', channels: '41', url: 'https://iptv-org.github.io/iptv/countries/cz.m3u' },
+        { name: 'Democratic Republic of the Congo', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/cd.m3u' },
+        { name: 'Denmark', channels: '28', url: 'https://iptv-org.github.io/iptv/countries/dk.m3u' },
+        { name: 'Djibouti', channels: '39', url: 'https://iptv-org.github.io/iptv/countries/dj.m3u' },
+        { name: 'Dominica', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/dm.m3u' },
+        { name: 'Dominican Republic', channels: '197', url: 'https://iptv-org.github.io/iptv/countries/do.m3u' },
+        { name: 'East Timor', channels: '29', url: 'https://iptv-org.github.io/iptv/countries/tl.m3u' },
+        { name: 'Ecuador', channels: '85', url: 'https://iptv-org.github.io/iptv/countries/ec.m3u' },
+        { name: 'Egypt', channels: '65', url: 'https://iptv-org.github.io/iptv/countries/eg.m3u' },
+        { name: 'El Salvador', channels: '76', url: 'https://iptv-org.github.io/iptv/countries/sv.m3u' },
+        { name: 'Equatorial Guinea', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/gq.m3u' },
+        { name: 'Eritrea', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/er.m3u' },
+        { name: 'Estonia', channels: '19', url: 'https://iptv-org.github.io/iptv/countries/ee.m3u' },
+        { name: 'Ethiopia', channels: '15', url: 'https://iptv-org.github.io/iptv/countries/et.m3u' },
+        { name: 'Falkland Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/fk.m3u' },
+        { name: 'Faroe Islands', channels: '1', url: 'https://iptv-org.github.io/iptv/countries/fo.m3u' },
+        { name: 'Fiji', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/fj.m3u' },
+        { name: 'Finland', channels: '36', url: 'https://iptv-org.github.io/iptv/countries/fi.m3u' },
+        { name: 'France', channels: '189', url: 'https://iptv-org.github.io/iptv/countries/fr.m3u' },
+        { name: 'French Guiana', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/gf.m3u' },
+        { name: 'French Polynesia', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/pf.m3u' },
+        { name: 'French Southern Territories', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/tf.m3u' },
+        { name: 'Gabon', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/ga.m3u' },
+        { name: 'Gambia', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/gm.m3u' },
+        { name: 'Georgia', channels: '21', url: 'https://iptv-org.github.io/iptv/countries/ge.m3u' },
+        { name: 'Germany', channels: '252', url: 'https://iptv-org.github.io/iptv/countries/de.m3u' },
+        { name: 'Ghana', channels: '26', url: 'https://iptv-org.github.io/iptv/countries/gh.m3u' },
+        { name: 'Greece', channels: '97', url: 'https://iptv-org.github.io/iptv/countries/gr.m3u' },
+        { name: 'Greenland', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/gl.m3u' },
+        { name: 'Grenada', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/gd.m3u' },
+        { name: 'Guadeloupe', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/gp.m3u' },
+        { name: 'Guam', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/gu.m3u' },
+        { name: 'Guatemala', channels: '106', url: 'https://iptv-org.github.io/iptv/countries/gt.m3u' },
+        { name: 'Guernsey', channels: '1', url: 'https://iptv-org.github.io/iptv/countries/gg.m3u' },
+        { name: 'Guinea', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/gn.m3u' },
+        { name: 'Guinea-Bissau', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/gw.m3u' },
+        { name: 'Guyana', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/gy.m3u' },
+        { name: 'Haiti', channels: '21', url: 'https://iptv-org.github.io/iptv/countries/ht.m3u' },
+        { name: 'Honduras', channels: '105', url: 'https://iptv-org.github.io/iptv/countries/hn.m3u' },
+        { name: 'Hong Kong', channels: '21', url: 'https://iptv-org.github.io/iptv/countries/hk.m3u' },
+        { name: 'Hungary', channels: '81', url: 'https://iptv-org.github.io/iptv/countries/hu.m3u' },
+        { name: 'Iceland', channels: '16', url: 'https://iptv-org.github.io/iptv/countries/is.m3u' },
+        { name: 'India', channels: '161', url: 'https://iptv-org.github.io/iptv/countries/in.m3u' },
+        { name: 'Indonesia', channels: '175', url: 'https://iptv-org.github.io/iptv/countries/id.m3u' },
+        { name: 'Iran', channels: '56', url: 'https://iptv-org.github.io/iptv/countries/ir.m3u' },
+        { name: 'Iraq', channels: '63', url: 'https://iptv-org.github.io/iptv/countries/iq.m3u' },
+        { name: 'Ireland', channels: '24', url: 'https://iptv-org.github.io/iptv/countries/ie.m3u' },
+        { name: 'Israel', channels: '18', url: 'https://iptv-org.github.io/iptv/countries/il.m3u' },
+        { name: 'Italy', channels: '403', url: 'https://iptv-org.github.io/iptv/countries/it.m3u' },
+        { name: 'Ivory Coast', channels: '16', url: 'https://iptv-org.github.io/iptv/countries/ci.m3u' },
+        { name: 'Jamaica', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/jm.m3u' },
+        { name: 'Japan', channels: '53', url: 'https://iptv-org.github.io/iptv/countries/jp.m3u' },
+        { name: 'Jordan', channels: '57', url: 'https://iptv-org.github.io/iptv/countries/jo.m3u' },
+        { name: 'Kazakhstan', channels: '31', url: 'https://iptv-org.github.io/iptv/countries/kz.m3u' },
+        { name: 'Kenya', channels: '14', url: 'https://iptv-org.github.io/iptv/countries/ke.m3u' },
+        { name: 'Kiribati', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/ki.m3u' },
+        { name: 'Kosovo', channels: '20', url: 'https://iptv-org.github.io/iptv/countries/xk.m3u' },
+        { name: 'Kuwait', channels: '41', url: 'https://iptv-org.github.io/iptv/countries/kw.m3u' },
+        { name: 'Kyrgyzstan', channels: '3', url: 'https://iptv-org.github.io/iptv/countries/kg.m3u' },
+        { name: 'Laos', channels: '46', url: 'https://iptv-org.github.io/iptv/countries/la.m3u' },
+        { name: 'Latvia', channels: '21', url: 'https://iptv-org.github.io/iptv/countries/lv.m3u' },
+        { name: 'Lebanon', channels: '53', url: 'https://iptv-org.github.io/iptv/countries/lb.m3u' },
+        { name: 'Lesotho', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/ls.m3u' },
+        { name: 'Liberia', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/lr.m3u' },
+        { name: 'Libya', channels: '45', url: 'https://iptv-org.github.io/iptv/countries/ly.m3u' },
+        { name: 'Liechtenstein', channels: '17', url: 'https://iptv-org.github.io/iptv/countries/li.m3u' },
+        { name: 'Lithuania', channels: '21', url: 'https://iptv-org.github.io/iptv/countries/lt.m3u' },
+        { name: 'Luxembourg', channels: '23', url: 'https://iptv-org.github.io/iptv/countries/lu.m3u' },
+        { name: 'Macao', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/mo.m3u' },
+        { name: 'Madagascar', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/mg.m3u' },
+        { name: 'Malawi', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/mw.m3u' },
+        { name: 'Malaysia', channels: '41', url: 'https://iptv-org.github.io/iptv/countries/my.m3u' },
+        { name: 'Maldives', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/mv.m3u' },
+        { name: 'Mali', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/ml.m3u' },
+        { name: 'Malta', channels: '14', url: 'https://iptv-org.github.io/iptv/countries/mt.m3u' },
+        { name: 'Marshall Islands', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/mh.m3u' },
+        { name: 'Martinique', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/mq.m3u' },
+        { name: 'Mauritania', channels: '37', url: 'https://iptv-org.github.io/iptv/countries/mr.m3u' },
+        { name: 'Mauritius', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/mu.m3u' },
+        { name: 'Mayotte', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/yt.m3u' },
+        { name: 'Mexico', channels: '209', url: 'https://iptv-org.github.io/iptv/countries/mx.m3u' },
+        { name: 'Micronesia', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/fm.m3u' },
+        { name: 'Moldova', channels: '30', url: 'https://iptv-org.github.io/iptv/countries/md.m3u' },
+        { name: 'Monaco', channels: '13', url: 'https://iptv-org.github.io/iptv/countries/mc.m3u' },
+        { name: 'Mongolia', channels: '26', url: 'https://iptv-org.github.io/iptv/countries/mn.m3u' },
+        { name: 'Montenegro', channels: '18', url: 'https://iptv-org.github.io/iptv/countries/me.m3u' },
+        { name: 'Montserrat', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/ms.m3u' },
+        { name: 'Morocco', channels: '52', url: 'https://iptv-org.github.io/iptv/countries/ma.m3u' },
+        { name: 'Mozambique', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/mz.m3u' },
+        { name: 'Myanmar (Burma)', channels: '51', url: 'https://iptv-org.github.io/iptv/countries/mm.m3u' },
+        { name: 'Namibia', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/na.m3u' },
+        { name: 'Nauru', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/nr.m3u' },
+        { name: 'Nepal', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/np.m3u' },
+        { name: 'Netherlands', channels: '143', url: 'https://iptv-org.github.io/iptv/countries/nl.m3u' },
+        { name: 'New Caledonia', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/nc.m3u' },
+        { name: 'New Zealand', channels: '32', url: 'https://iptv-org.github.io/iptv/countries/nz.m3u' },
+        { name: 'Nicaragua', channels: '70', url: 'https://iptv-org.github.io/iptv/countries/ni.m3u' },
+        { name: 'Niger', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/ne.m3u' },
+        { name: 'Nigeria', channels: '39', url: 'https://iptv-org.github.io/iptv/countries/ng.m3u' },
+        { name: 'Niue', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/nu.m3u' },
+        { name: 'Norfolk Island', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/nf.m3u' },
+        { name: 'North Korea', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/kp.m3u' },
+        { name: 'North Macedonia', channels: '49', url: 'https://iptv-org.github.io/iptv/countries/mk.m3u' },
+        { name: 'Northern Mariana Islands', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/mp.m3u' },
+        { name: 'Norway', channels: '23', url: 'https://iptv-org.github.io/iptv/countries/no.m3u' },
+        { name: 'Oman', channels: '34', url: 'https://iptv-org.github.io/iptv/countries/om.m3u' },
+        { name: 'Pakistan', channels: '29', url: 'https://iptv-org.github.io/iptv/countries/pk.m3u' },
+        { name: 'Palau', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/pw.m3u' },
+        { name: 'Palestine', channels: '53', url: 'https://iptv-org.github.io/iptv/countries/ps.m3u' },
+        { name: 'Panama', channels: '71', url: 'https://iptv-org.github.io/iptv/countries/pa.m3u' },
+        { name: 'Papua New Guinea', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/pg.m3u' },
+        { name: 'Paraguay', channels: '82', url: 'https://iptv-org.github.io/iptv/countries/py.m3u' },
+        { name: 'Peru', channels: '216', url: 'https://iptv-org.github.io/iptv/countries/pe.m3u' },
+        { name: 'Philippines', channels: '45', url: 'https://iptv-org.github.io/iptv/countries/ph.m3u' },
+        { name: 'Pitcairn Islands', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/pn.m3u' },
+        { name: 'Poland', channels: '64', url: 'https://iptv-org.github.io/iptv/countries/pl.m3u' },
+        { name: 'Portugal', channels: '45', url: 'https://iptv-org.github.io/iptv/countries/pt.m3u' },
+        { name: 'Puerto Rico', channels: '72', url: 'https://iptv-org.github.io/iptv/countries/pr.m3u' },
+        { name: 'Qatar', channels: '37', url: 'https://iptv-org.github.io/iptv/countries/qa.m3u' },
+        { name: 'Republic of the Congo', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/cg.m3u' },
+        { name: 'Romania', channels: '111', url: 'https://iptv-org.github.io/iptv/countries/ro.m3u' },
+        { name: 'Russia', channels: '317', url: 'https://iptv-org.github.io/iptv/countries/ru.m3u' },
+        { name: 'Rwanda', channels: '12', url: 'https://iptv-org.github.io/iptv/countries/rw.m3u' },
+        { name: 'Réunion', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/re.m3u' },
+        { name: 'Saint Barthélemy', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/bl.m3u' },
+        { name: 'Saint Helena', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/sh.m3u' },
+        { name: 'Saint Kitts and Nevis', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/kn.m3u' },
+        { name: 'Saint Lucia', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/lc.m3u' },
+        { name: 'Saint Martin', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/mf.m3u' },
+        { name: 'Saint Pierre and Miquelon', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/pm.m3u' },
+        { name: 'Saint Vincent and the Grenadines', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/vc.m3u' },
+        { name: 'Samoa', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/ws.m3u' },
+        { name: 'San Marino', channels: '14', url: 'https://iptv-org.github.io/iptv/countries/sm.m3u' },
+        { name: 'Saudi Arabia', channels: '75', url: 'https://iptv-org.github.io/iptv/countries/sa.m3u' },
+        { name: 'Senegal', channels: '11', url: 'https://iptv-org.github.io/iptv/countries/sn.m3u' },
+        { name: 'Serbia', channels: '90', url: 'https://iptv-org.github.io/iptv/countries/rs.m3u' },
+        { name: 'Seychelles', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/sc.m3u' },
+        { name: 'Sierra Leone', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/sl.m3u' },
+        { name: 'Singapore', channels: '38', url: 'https://iptv-org.github.io/iptv/countries/sg.m3u' },
+        { name: 'Sint Maarten', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/sx.m3u' },
+        { name: 'Slovakia', channels: '59', url: 'https://iptv-org.github.io/iptv/countries/sk.m3u' },
+        { name: 'Slovenia', channels: '31', url: 'https://iptv-org.github.io/iptv/countries/si.m3u' },
+        { name: 'Solomon Islands', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/sb.m3u' },
+        { name: 'Somalia', channels: '50', url: 'https://iptv-org.github.io/iptv/countries/so.m3u' },
+        { name: 'South Africa', channels: '22', url: 'https://iptv-org.github.io/iptv/countries/za.m3u' },
+        { name: 'South Georgia and the South Sandwich Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/gs.m3u' },
+        { name: 'South Korea', channels: '95', url: 'https://iptv-org.github.io/iptv/countries/kr.m3u' },
+        { name: 'South Sudan', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/ss.m3u' },
+        { name: 'Spain', channels: '279', url: 'https://iptv-org.github.io/iptv/countries/es.m3u' },
+        { name: 'Sri Lanka', channels: '11', url: 'https://iptv-org.github.io/iptv/countries/lk.m3u' },
+        { name: 'Sudan', channels: '42', url: 'https://iptv-org.github.io/iptv/countries/sd.m3u' },
+        { name: 'Suriname', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/sr.m3u' },
+        { name: 'Swaziland', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/sz.m3u' },
+        { name: 'Sweden', channels: '42', url: 'https://iptv-org.github.io/iptv/countries/se.m3u' },
+        { name: 'Switzerland', channels: '61', url: 'https://iptv-org.github.io/iptv/countries/ch.m3u' },
+        { name: 'Syria', channels: '44', url: 'https://iptv-org.github.io/iptv/countries/sy.m3u' },
+        { name: 'São Tomé and Príncipe', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/st.m3u' },
+        { name: 'Taiwan', channels: '103', url: 'https://iptv-org.github.io/iptv/countries/tw.m3u' },
+        { name: 'Tajikistan', channels: '2', url: 'https://iptv-org.github.io/iptv/countries/tj.m3u' },
+        { name: 'Tanzania', channels: '9', url: 'https://iptv-org.github.io/iptv/countries/tz.m3u' },
+        { name: 'Thailand', channels: '97', url: 'https://iptv-org.github.io/iptv/countries/th.m3u' },
+        { name: 'Togo', channels: '15', url: 'https://iptv-org.github.io/iptv/countries/tg.m3u' },
+        { name: 'Tokelau', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/tk.m3u' },
+        { name: 'Tonga', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/to.m3u' },
+        { name: 'Trinidad and Tobago', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/tt.m3u' },
+        { name: 'Tunisia', channels: '47', url: 'https://iptv-org.github.io/iptv/countries/tn.m3u' },
+        { name: 'Turkey', channels: '209', url: 'https://iptv-org.github.io/iptv/countries/tr.m3u' },
+        { name: 'Turkmenistan', channels: '7', url: 'https://iptv-org.github.io/iptv/countries/tm.m3u' },
+        { name: 'Turks and Caicos Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/tc.m3u' },
+        { name: 'Tuvalu', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/tv.m3u' },
+        { name: 'U.S. Virgin Islands', channels: '5', url: 'https://iptv-org.github.io/iptv/countries/vi.m3u' },
+        { name: 'Uganda', channels: '16', url: 'https://iptv-org.github.io/iptv/countries/ug.m3u' },
+        { name: 'Ukraine', channels: '78', url: 'https://iptv-org.github.io/iptv/countries/ua.m3u' },
+        { name: 'United Arab Emirates', channels: '70', url: 'https://iptv-org.github.io/iptv/countries/ae.m3u' },
+        { name: 'United Kingdom', channels: '202', url: 'https://iptv-org.github.io/iptv/countries/uk.m3u' },
+        { name: 'United States', channels: '1739', url: 'https://iptv-org.github.io/iptv/countries/us.m3u' },
+        { name: 'Uruguay', channels: '61', url: 'https://iptv-org.github.io/iptv/countries/uy.m3u' },
+        { name: 'Uzbekistan', channels: '2', url: 'https://iptv-org.github.io/iptv/countries/uz.m3u' },
+        { name: 'Vanuatu', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/vu.m3u' },
+        { name: 'Vatican City', channels: '13', url: 'https://iptv-org.github.io/iptv/countries/va.m3u' },
+        { name: 'Venezuela', channels: '95', url: 'https://iptv-org.github.io/iptv/countries/ve.m3u' },
+        { name: 'Vietnam', channels: '83', url: 'https://iptv-org.github.io/iptv/countries/vn.m3u' },
+        { name: 'Wallis and Futuna', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/wf.m3u' },
+        { name: 'Western Sahara', channels: '11', url: 'https://iptv-org.github.io/iptv/countries/eh.m3u' },
+        { name: 'Yemen', channels: '40', url: 'https://iptv-org.github.io/iptv/countries/ye.m3u' },
+        { name: 'Zambia', channels: '8', url: 'https://iptv-org.github.io/iptv/countries/zm.m3u' },
+        { name: 'Zimbabwe', channels: '6', url: 'https://iptv-org.github.io/iptv/countries/zw.m3u' }
+    ],
+    regions: [
+        { name: 'Africa', channels: '252', url: 'https://iptv-org.github.io/iptv/regions/afr.m3u' },
+        { name: 'Americas', channels: '3416', url: 'https://iptv-org.github.io/iptv/regions/amer.m3u' },
+        { name: 'Asia-Pacific', channels: '1522', url: 'https://iptv-org.github.io/iptv/regions/apac.m3u' },
+        { name: 'Arab world', channels: '315', url: 'https://iptv-org.github.io/iptv/regions/arab.m3u' },
+        { name: 'Association of Southeast Asian Nations', channels: '358', url: 'https://iptv-org.github.io/iptv/regions/asean.m3u' },
+        { name: 'Asia', channels: '2332', url: 'https://iptv-org.github.io/iptv/regions/asia.m3u' },
+        { name: 'Benelux', channels: '183', url: 'https://iptv-org.github.io/iptv/regions/benelux.m3u' },
+        { name: 'Caribbean', channels: '187', url: 'https://iptv-org.github.io/iptv/regions/carib.m3u' },
+        { name: 'Central Asia', channels: '29', url: 'https://iptv-org.github.io/iptv/regions/cas.m3u' },
+        { name: 'Central and Eastern Europe', channels: '940', url: 'https://iptv-org.github.io/iptv/regions/cee.m3u' },
+        { name: 'Central America', channels: '179', url: 'https://iptv-org.github.io/iptv/regions/cenamer.m3u' },
+        { name: 'Commonwealth of Independent States', channels: '412', url: 'https://iptv-org.github.io/iptv/regions/cis.m3u' },
+        { name: 'Europe, the Middle East and Africa', channels: '3364', url: 'https://iptv-org.github.io/iptv/regions/emea.m3u' },
+        { name: 'Europe', channels: '2873', url: 'https://iptv-org.github.io/iptv/regions/eur.m3u' },
+        { name: 'Hispanic America', channels: '1281', url: 'https://iptv-org.github.io/iptv/regions/hispam.m3u' },
+        { name: 'Latin America and the Caribbean', channels: '1565', url: 'https://iptv-org.github.io/iptv/regions/lac.m3u' },
+        { name: 'Latin America', channels: '1550', url: 'https://iptv-org.github.io/iptv/regions/latam.m3u' },
+        { name: 'Maghreb', channels: '52', url: 'https://iptv-org.github.io/iptv/regions/maghreb.m3u' },
+        { name: 'Middle East and North Africa', channels: '550', url: 'https://iptv-org.github.io/iptv/regions/mena.m3u' },
+        { name: 'Middle East', channels: '510', url: 'https://iptv-org.github.io/iptv/regions/mideast.m3u' },
+        { name: 'Northern America', channels: '1851', url: 'https://iptv-org.github.io/iptv/regions/nam.m3u' },
+        { name: 'Northern Europe', channels: '106', url: 'https://iptv-org.github.io/iptv/regions/neur.m3u' },
+        { name: 'North America', channels: '2363', url: 'https://iptv-org.github.io/iptv/regions/noram.m3u' },
+        { name: 'Nordics', channels: '82', url: 'https://iptv-org.github.io/iptv/regions/nord.m3u' },
+        { name: 'Oceania', channels: '56', url: 'https://iptv-org.github.io/iptv/regions/oce.m3u' },
+        { name: 'South Asia', channels: '219', url: 'https://iptv-org.github.io/iptv/regions/sas.m3u' },
+        { name: 'Southeast Asia', channels: '381', url: 'https://iptv-org.github.io/iptv/regions/sea.m3u' },
+        { name: 'Southern Europe', channels: '985', url: 'https://iptv-org.github.io/iptv/regions/ser.m3u' },
+        { name: 'South America', channels: '1053', url: 'https://iptv-org.github.io/iptv/regions/southam.m3u' },
+        { name: 'Sub-Saharan Africa', channels: '190', url: 'https://iptv-org.github.io/iptv/regions/ssa.m3u' },
+        { name: 'West Africa', channels: '94', url: 'https://iptv-org.github.io/iptv/regions/wafr.m3u' },
+        { name: 'Western Europe', channels: '851', url: 'https://iptv-org.github.io/iptv/regions/wer.m3u' }
+    ]
+};
 
 </script>
 </body>
