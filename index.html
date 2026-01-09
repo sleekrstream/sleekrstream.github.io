@@ -714,10 +714,10 @@
                     </div>
                     <div>
                         <div class="flex justify-between items-center">
-                            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL (.m3u, .m3u8)</label>
+                            <label class="block text-xs font-semibold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Stream URL</label>
                             <a href="https://iptv-org.github.io" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-400 hover:text-brand-300 transition-colors mb-2 flex items-center gap-1">
                                 <i data-lucide="external-link" class="w-3 h-3"></i>
-                                Get IPTV streaming links
+                                Find public streams
                             </a>
                         </div>
                         <div class="relative group">
@@ -780,8 +780,8 @@
                     <div class="pt-4 flex flex-col gap-4">
                         <div class="flex items-center justify-between p-4 bg-dark-bg/50 border border-dark-border rounded-xl">
                             <div class="pr-4">
-                                <span class="font-semibold text-white">Check stream availability</span>
-                                <p class="text-xs text-gray-400 mt-1">During import, check if streams are reachable. Unreachable streams will be marked 'Poor' instead of discarded.</p>
+                                <span class="font-semibold text-white">Auto-delete unreachable streams</span>
+                                <p class="text-xs text-gray-400 mt-1">During import, discard any streams that cannot be reached. Recommended for cleaner lists.</p>
                             </div>
                             <label class="custom-checkbox shrink-0">
                                 <input type="checkbox" id="inpSmartCleanup" checked>
@@ -887,6 +887,7 @@
                         <button id="scanHealthBtn" onclick="scanAllChannelHealth()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 rounded-xl text-white transition text-sm font-bold shadow-lg shadow-brand-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-wait">
                            <i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan
                         </button>
+                        <p class="text-xs text-gray-500 mt-3 max-w-xs mx-auto">Note: This performs a quick reachability check. A 'Good' status confirms the link is active but does not guarantee the stream is playable.</p>
                         <p id="scanHealthStatus" class="text-xs text-gray-500 mt-3 hidden"></p>
                     </div>
                      <div class="pt-6 border-t border-dark-border/50">
@@ -998,7 +999,7 @@
                     </div>
                      <div>
                         <p class="text-2xl font-bold text-red-400" id="importProgressRemoved">0</p>
-                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Marked Poor</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-wider">Channels Discarded</p>
                     </div>
                 </div>
             </div>
@@ -1455,7 +1456,7 @@
         
         // Final check, although button should be disabled
         if (!url || els.saveChannelBtn.disabled) {
-            showToast("Please enter a valid and verified stream URL.", "error");
+            showToast("Please enter a valid stream URL.", "error");
             return;
         }
 
@@ -1900,7 +1901,7 @@
             { id: 'audio', icon: 'audio-lines', label: 'Audio', visible: hasAudioTracks, onClick: 'showAudioTrackMenu()' },
             { id: 'aspect', icon: 'scan', label: 'Aspect Ratio', visible: true, onClick: 'toggleAspect()' },
             { id: 'snapshot', icon: 'camera', label: 'Snapshot', visible: true, onClick: 'takeSnapshot()' },
-            { id: 'captions', icon: 'subtitles', label: 'Captions', visible: true, onClick: 'toggleCaptions()', disabled: !hasCaptions, hasBadge: true },
+            { id: 'captions', icon: 'subtitles', label: 'Captions', visible: hasCaptions, onClick: 'toggleCaptions()', disabled: !hasCaptions, hasBadge: true },
             { id: 'pip', icon: 'picture-in-picture-2', label: 'PiP', visible: true, onClick: 'togglePiP()' },
             { id: 'stats', icon: 'bar-chart-2', label: 'Stats', visible: true, onClick: 'toggleStats()' },
         ];
@@ -2069,10 +2070,10 @@
         showToast(`Captions ${isCaptionsOn ? 'ON' : 'OFF'}`);
 
         for (let i = 0; i < video.textTracks.length; i++) {
-             video.textTracks[i].mode = isCaptionsOn ? 'showing' : 'hidden';
-        }
+			 video.textTracks[i].mode = isCaptionsOn ? 'showing' : 'hidden';
+		}
         if(hls) {
-             hls.subtitleDisplay = isCaptionsOn;
+             hls.subtitleDisplay = false;
              if (isCaptionsOn && hls.subtitleTrack === -1) hls.subtitleTrack = 0;
         }
     }
@@ -2342,9 +2343,9 @@
     
     function importExampleChannels() {
         const examples = [
-            { id: "nickelodeon", name: "Nickelodeon", url: "https://vid.melody.com.ng/Nickelodeon/master.m3u8", group: "Kids", logo: "https://i.imgur.com/E84jnP8.png" },
+            { id: "nickelodeon", name: "Nickelodeon", url: "http://23.237.104.106:8080/USA_NICKELODEON/index.m3u8", group: "Kids", logo: "https://i.imgur.com/E84jnP8.png" },
             { id: "campsnoopy", name: "Camp Snoopy", url: "https://stream.ads.ottera.tv/playlist.m3u8?network_id=269", group: "Kids", logo: "https://i.imgur.com/8PUbPVU.png" },
-            { id: "history", name: "History", url: "https://vid.melody.com.ng/History/master.m3u8", group: "Documentary", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/History_%282021%29.svg/512px-History_%282021%29.svg.png" },
+            { id: "history", name: "History", url: "https://fl1.moveonjoy.com/history_channel/index.m3u8", group: "Documentary", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/History_%282021%29.svg/512px-History_%282021%29.svg.png" },
             { id: "gameshownetwork", name: "Game Show Network", url: "https://a-cdn.klowdtv.com/live2/gsn_720p/playlist.m3u8", group: "Entertainment", logo: "https://www.gameshownetwork.com/storage/app/media/2020/Navigation/gsn_logo.jpg" },
             { id: "disneychannel", name: "Disney Channel", url: "https://disney.melody.com.ng/Disney/master.m3u8", group: "Kids", logo: "https://upload.wikimedia.org/wikipedia/commons/3/3d/2022_Disney_Channel_logo.svg" },
             { id: "cbs", name: "CBS News", url: "https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d51c92330/master.m3u8", group: "News", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/CBS_logo_%282020%29.svg/512px-CBS_logo_%282020%29.svg.png" },
@@ -2528,12 +2529,15 @@
                     for (let i = 0; i < lines.length; i++) {
                         if (lines[i].startsWith('#EXTINF:')) {
                             const info = lines[i];
-                            const url = lines[++i]?.trim();
+                            let url = lines[++i]?.trim();
 
                             if (!url || !url.startsWith('http')) continue;
 
+                            // Handle potential carriage returns
+                            url = url.replace(/\\r$/, '');
+
                             const nameMatch = info.match(/,(.*)/);
-                            const name = nameMatch ? nameMatch[1].trim() : 'Unknown';
+                            const name = nameMatch ? nameMatch[1].trim().replace(/\\r$/, '') : 'Unknown';
                             
                             const logoMatch = info.match(/tvg-logo="([^"]*)"/);
                             const logo = logoMatch ? logoMatch[1] : '';
@@ -2567,14 +2571,16 @@
                             }
                         }
                         
-                        const health = isReachable ? 'unchecked' : 'poor';
-                        if (isReachable) kept++; else removed++;
-
-                        finalChannels.push({
-                            id: Date.now().toString() + Math.random(),
-                            ...channel,
-                            health: health
-                        });
+                        if (!smartCleanup || isReachable) {
+                             finalChannels.push({
+                                id: Date.now().toString() + Math.random(),
+                                ...channel,
+                                health: 'unchecked'
+                            });
+                            kept++;
+                        } else {
+                            removed++;
+                        }
                         
                         if (i % 20 === 0 || i === totalToProcess - 1) {
                              self.postMessage({ type: 'progress', kept, removed, total: totalToProcess });
@@ -2622,6 +2628,7 @@
 
     function resetImportProgressUI() {
         const p = els.importProgress;
+        const smartCleanup = document.getElementById('inpSmartCleanup').checked;
         p.title.textContent = "Importing Playlist...";
         p.status.textContent = "Parsing and validating channels. This may take a few moments...";
         p.queueStatus.classList.add('hidden');
@@ -2629,6 +2636,8 @@
         p.bar.style.width = "0%";
         p.kept.textContent = "0";
         p.removed.textContent = "0";
+        // Update label based on the checkbox state
+        p.removed.nextElementSibling.textContent = smartCleanup ? "Channels Discarded" : "Channels Marked Poor";
         p.hideBtn.classList.remove('hidden');
         p.cancelBtn.classList.remove('hidden');
         p.doneBtn.classList.add('hidden');
@@ -2668,7 +2677,10 @@
     function finishImportQueue() {
         const p = els.importProgress;
         p.title.textContent = "Import Complete!";
-        p.status.textContent = `Added ${totalKept + totalRemoved} new channels. ${totalRemoved} were marked as 'Poor' health.`;
+        const smartCleanup = document.getElementById('inpSmartCleanup').checked;
+        const removedText = smartCleanup ? `Discarded ${totalRemoved} unreachable streams.` : `Added ${totalRemoved} streams marked as 'Poor' health.`;
+        p.status.textContent = `Successfully added ${totalKept} new channels. ${removedText}`;
+
         p.queueStatus.classList.add('hidden');
         p.hideBtn.classList.add('hidden');
         p.cancelBtn.classList.add('hidden');
@@ -2846,22 +2858,20 @@
             return;
         }
 
-        const isStream = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('.m3u');
-        if (!isStream) {
-            setValidationState('error', 'URL must be a .m3u8 or .m3u link.');
-            return;
-        }
+        // REMOVED M3U8 restriction
+        // const isStream = url.toLowerCase().includes('.m3u8') || url.toLowerCase().includes('.m3u');
+        // if (!isStream) {
+        //     setValidationState('error', 'URL must be a .m3u8 or .m3u link.');
+        //     return;
+        // }
 
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000);
-            // Using HEAD with no-cors is the best we can do client-side.
-            // It confirms the domain/path is reachable, not that the stream is valid.
             await fetch(url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' });
             clearTimeout(timeoutId);
-            setValidationState('success', 'URL is reachable!');
+            setValidationState('success', 'URL appears valid. Playability will be confirmed on save.');
         } catch (error) {
-            // This catches DNS errors, timeouts, etc.
              if (isInitial) {
                  setValidationState('error', 'Could not reach URL. It might be offline.');
              } else {
@@ -2903,7 +2913,6 @@
                 break;
             case 'none':
 			default:
-				// Disable button if required fields are empty, otherwise enable.
 				const name = document.getElementById('inpName').value.trim();
 				const url = document.getElementById('inpUrl').value.trim();
 				saveBtn.disabled = !(name && url);
