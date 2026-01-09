@@ -2383,7 +2383,7 @@
         try {
             const jsonString = JSON.stringify(shareableChannel);
             const base64Data = btoa(jsonString);
-            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64Data}`;
+            const shareUrl = `${window.location.origin}${window.location.pathname}#share=${base64Data}`;
 
             if (navigator.share) {
                 await navigator.share({
@@ -2402,7 +2402,7 @@
     }
 
     function handleIncomingShareLink() {
-        if (window.location.hash.startsWith('?share=')) {
+        if (window.location.hash.startsWith('#share=')) {
             const base64Data = window.location.hash.substring(7);
             try {
                 const jsonString = atob(base64Data);
