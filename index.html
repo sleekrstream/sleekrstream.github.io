@@ -352,9 +352,19 @@
 
     /* Custom Caption Transition */
     .caption-transition {
-        transition: opacity 0.3s ease, transform 0.3s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease, bottom 0.3s ease-in-out;
     }
 	
+    /* Caption Sliding Logic */
+    #videoContainer.controls-hidden #captionOverlay {
+        bottom: 2rem; /* 32px from bottom */
+    }
+
+    @media (max-width: 639px) {
+        #videoContainer.controls-hidden #captionOverlay {
+            bottom: 1.5rem; /* 24px from bottom on small screens */
+        }
+    }
 
 </style>
 </head>
@@ -629,6 +639,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- NEW: Desktop Audio Track Menu -->
+        <div id="desktopAudioMenu" class="absolute w-60 flex-col hidden origin-bottom-left bg-[#0f172a]/75 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-[25] transform-gpu p-2 animate-pop-up max-h-60 overflow-y-auto no-scrollbar">
+            <!-- Audio track options will be injected here -->
         </div>
 
         <!-- Stats Overlay -->
@@ -1074,10 +1089,14 @@
     let urlValidationTimeout;
     let currentSortMode = 'default'; // 'default', 'health_asc', 'health_desc'
     let captionTrackListener = null; // Listener reference for cleaning up
+    
+    // --- KEYBOARD SHORTCUT STATE ---
+    let keysPressed = {}; // Tracks currently held keys
 
     // Mobile specific interaction state
     let isTouchInteraction = false;
     let mobileMenuOpen = false;
+    let isDesktopAudioMenuOpen = false;
 
     const video = document.getElementById('videoPlayer');
 
@@ -1164,6 +1183,7 @@
         `Use <kbd class="font-mono bg-white/10 px-1 rounded mx-1">←</kbd> and <kbd class="font-mono bg-white/10 px-1 rounded mx-1">→</kbd> to change channels`,
         `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">F</kbd> for Fullscreen`,
         `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">M</kbd> to Mute, <kbd class="font-mono bg-white/10 px-1 rounded mx-1">↑</kbd>/<kbd class="font-mono bg-white/10 px-1 rounded mx-1">↓</kbd> for Volume`,
+        `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">Shift</kbd> + <kbd class="font-mono bg-white/10 px-1 rounded mx-1">V</kbd> + <kbd class="font-mono bg-white/10 px-1 rounded mx-1">0-9</kbd> to switch Audio Tracks`,
         `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">/</kbd> to focus the Search bar`,
         `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">A</kbd> to cycle Aspect Ratios`,
         `Press <kbd class="font-mono bg-white/10 px-1 rounded mx-1">P</kbd> for Picture-in-Picture`,
@@ -1226,6 +1246,7 @@
                 if (isMobileSidebarOpen) toggleSidebar(); 
                 if (mobileMenuOpen) closeMobileMenu();
             }
+             if (isDesktopAudioMenuOpen) closeDesktopAudioMenu();
         });
         
         document.addEventListener('fullscreenchange', () => {
@@ -1289,12 +1310,14 @@
             if (!els.videoContainer.classList.contains('player-active')) return;
             // Select all UI elements that should auto-hide
             document.querySelectorAll('.ui-element').forEach(el => el.classList.remove('ui-hidden'));
+            els.videoContainer.classList.remove('controls-hidden');
         }
 
         function hideUI() {
-            if (video.paused || mobileMenuOpen || isFullscreenMenuOpen) return;
+            if (video.paused || mobileMenuOpen || isFullscreenMenuOpen || isDesktopAudioMenuOpen) return;
             // Select all UI elements that should auto-hide
             document.querySelectorAll('.ui-element').forEach(el => el.classList.add('ui-hidden'));
+            els.videoContainer.classList.add('controls-hidden');
             // Also close menu if UI hides
             if(mobileMenuOpen) closeMobileMenu();
         }
@@ -1321,7 +1344,7 @@
         // We use 'click' on the container, but we check if it was a touch event flag
         els.videoContainer.addEventListener('click', (e) => {
             // Don't toggle if clicking actual controls or the new nav buttons
-            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions') || e.target.closest('#prevChannelBtn') || e.target.closest('#nextChannelBtn') || e.target.closest('#fullscreenChannelMenu')) return;
+            if(e.target.closest('.controls-wrapper') || e.target.closest('.glass') || e.target.closest('#mobileMenuOptions') || e.target.closest('#prevChannelBtn') || e.target.closest('#nextChannelBtn') || e.target.closest('#fullscreenChannelMenu') || e.target.closest('#desktopAudioMenu')) return;
 
             if (isTouchInteraction) {
                 if (els.controlsOverlay.classList.contains('ui-hidden')) {
@@ -1382,142 +1405,90 @@
         mobileMenuOpen = false;
         els.mobileMenuOptions.classList.add('hidden');
         els.mobileMenuOptions.classList.remove('flex');
+        // After closing, rebuild the original controls in the menu
+        buildPlayerControls(true);
     }
 
     // --- KEYBOARD SHORTCUTS ---
     function setupKeyboardShortcuts() {
+        // TRACK KEY HOLDS
         document.addEventListener('keydown', (e) => {
-            // 1. GLOBAL ESCAPE: Handle Closing UI elements regardless of focus
-            if (e.code === 'Escape') {
-                // Close Modals
-                const openModal = document.querySelector('.fixed.z-50:not(.hidden), .fixed.z-[60]:not(.hidden), .fixed.z-[70]:not(.hidden)');
-                if (openModal) {
-                    // Find the close button or toggle function associated
-                    const id = openModal.id;
-                    if(id) toggleModal(id);
-                    return;
+            keysPressed[e.key.toLowerCase()] = true;
+            
+            // CHECK FOR SHIFT + V + NUMBER
+            // We look for 'DigitX' codes to handle top-row numbers
+            if (keysPressed['shift'] && keysPressed['v'] && e.code.startsWith('Digit')) {
+                e.preventDefault();
+                const digit = parseInt(e.code.replace('Digit', '')); // 0-9
+                
+                // Logic: 0 = Index 0, 1 = Index 1, etc.
+                if (!isNaN(digit) && hls && hls.audioTracks) {
+                    if(hls.audioTracks[digit]) {
+                        setAudioTrack(digit);
+                    } else {
+                        showToast(`Audio track ${digit} not available`, 'error');
+                    }
                 }
-                // Close Mobile Sidebar
-                if (isMobileSidebarOpen) {
-                    toggleSidebar();
-                    return;
-                }
-                // Close Fullscreen Menu
-                if (isFullscreenMenuOpen) {
-                    toggleFullscreenMenu();
-                    return;
-                }
-                // Close Stats
-                if (!els.stats.overlay.classList.contains('hidden')) {
-                    toggleStats();
-                    return;
-                }
-                // Unfocus Search if focused
-                if (document.activeElement === els.searchInput) {
-                    els.searchInput.blur();
-                    return;
-                }
-            }
-
-            // 2. INPUT GUARD: Don't trigger shortcuts if typing in an input
-            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
                 return;
             }
 
-            // 3. MODAL GUARD: Don't trigger player controls if a modal is open
-            const modalIds = [
-                'addChannelModal', 
-                'settingsModal', 
-                'browsePlaylistsModal', 
-                'confirmModal', 
-                'shareConfirmModal', 
-                'importProgressModal'
-            ];
-            const isModalOpen = modalIds.some(id => {
-                const el = document.getElementById(id);
-                return el && !el.classList.contains('hidden');
-            });
-            if (isModalOpen) return;
+            // 1. GLOBAL ESCAPE HANDLER
+            if (e.code === 'Escape') {
+                const openModal = document.querySelector('.fixed.z-50:not(.hidden), .fixed.z-[60]:not(.hidden), .fixed.z-[70]:not(.hidden)');
+                if (openModal) { toggleModal(openModal.id); return; }
+                if (isMobileSidebarOpen) { toggleSidebar(); return; }
+                if (isFullscreenMenuOpen) { toggleFullscreenMenu(); return; }
+                if (isDesktopAudioMenuOpen) { closeDesktopAudioMenu(); return; }
+                if (!els.stats.overlay.classList.contains('hidden')) { toggleStats(); return; }
+                
+                // MOBILE MENU HANDLING
+                if (mobileMenuOpen) { 
+                    // If the "Back" button exists, we are in a submenu -> Go Back
+                    if(document.getElementById('mobileMenuBackBtn')) {
+                        buildPlayerControls(true); // Restore main menu
+                    } else {
+                        closeMobileMenu(); // Close entirely
+                    }
+                    return; 
+                }
+                
+                if (document.activeElement === els.searchInput) { els.searchInput.blur(); return; }
+            }
+
+            // 2. INPUT GUARD
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            // 3. MODAL GUARD
+            const modalIds = ['addChannelModal', 'settingsModal', 'browsePlaylistsModal', 'confirmModal', 'shareConfirmModal', 'importProgressModal'];
+            if (modalIds.some(id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden'))) return;
 
             // 4. SHORTCUT SWITCH
             switch(e.code) {
-                // Playback
-                case 'Space': 
-                case 'KeyK': // YouTube standard
-                    e.preventDefault(); 
-                    togglePlay(); 
-                    break;
-                
-                // Volume
-                case 'ArrowUp': 
-                    e.preventDefault(); 
-                    setVolume(Math.min(1, video.volume + 0.05)); 
-                    break;
-                case 'ArrowDown': 
-                    e.preventDefault(); 
-                    setVolume(Math.max(0, video.volume - 0.05)); 
-                    break;
-                case 'KeyM': 
-                    toggleMute(); 
-                    break;
-
-                // Navigation
-                case 'ArrowRight': 
-                    e.preventDefault(); 
-                    loadNextChannel(); 
-                    break;
-                case 'ArrowLeft': 
-                    e.preventDefault(); 
-                    loadPrevChannel(); 
-                    break;
-
-                // View Modes
-                case 'KeyF': 
-                    e.preventDefault(); 
-                    toggleFullscreen(); 
-                    break;
-                case 'KeyP': 
-                    togglePiP(); 
-                    break;
-                case 'KeyA':
-                    toggleAspect();
-                    break;
-                case 'KeyS':
-                    // Shift+S for Snapshot, S for Stats
-                    if (e.shiftKey) {
-                        takeSnapshot();
-                    } else {
-                        toggleStats();
-                    }
-                    break;
-                case 'KeyC':
-                    toggleCaptions();
-                    break;
-                case 'KeyB':
-                    toggleSidebar();
-                    break;
-
-                // Channel Actions
-                case 'KeyR':
-                    retryStream();
-                    showToast('Reloading Stream...');
-                    break;
-                case 'KeyL':
-                    toggleCurrentFavorite();
-                    break;
-                
-                // Interface
-                case 'Slash': // / key
+                case 'Space': case 'KeyK': e.preventDefault(); togglePlay(); break;
+                case 'ArrowUp': e.preventDefault(); setVolume(Math.min(1, video.volume + 0.05)); break;
+                case 'ArrowDown': e.preventDefault(); setVolume(Math.max(0, video.volume - 0.05)); break;
+                case 'KeyM': toggleMute(); break;
+                case 'ArrowRight': e.preventDefault(); loadNextChannel(); break;
+                case 'ArrowLeft': e.preventDefault(); loadPrevChannel(); break;
+                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
+                case 'KeyP': togglePiP(); break;
+                case 'KeyA': toggleAspect(); break;
+                case 'KeyS': e.shiftKey ? takeSnapshot() : toggleStats(); break;
+                case 'KeyC': toggleCaptions(); break;
+                case 'KeyB': toggleSidebar(); break;
+                case 'KeyR': retryStream(); showToast('Reloading Stream...'); break;
+                case 'KeyL': toggleCurrentFavorite(); break;
+                case 'Slash': 
                     e.preventDefault();
-                    if (!isDesktopSidebarCollapsed && window.innerWidth >= 768) {
-                        els.searchInput.focus();
-                    } else if (window.innerWidth >= 768) {
-                        // Open sidebar first if closed
-                        toggleSidebar();
-                        setTimeout(() => els.searchInput.focus(), 300);
-                    }
+                    if (!isDesktopSidebarCollapsed && window.innerWidth >= 768) els.searchInput.focus();
+                    else if (window.innerWidth >= 768) { toggleSidebar(); setTimeout(() => els.searchInput.focus(), 300); }
                     break;
             }
+        });
+
+        // UNTRACK KEYS ON LIFT
+        document.addEventListener('keyup', (e) => {
+            delete keysPressed[e.key.toLowerCase()];
         });
     }
 
@@ -2129,41 +2100,29 @@ function loadChannel(id) {
     }
 
     // --- CONTROLS ---
-    function buildPlayerControls() {
-        // 1. Determine if Captions are actually available
+    function buildPlayerControls(isMobileMenuOnly = false) {
+        // 1. Availability Checks
         let hasCaptions = false;
         if (hls) {
-            // If using HLS.js, it's the single source of truth for tracks.
-            // This avoids issues with stale native tracks from previous streams.
             hasCaptions = hls.subtitleTracks && hls.subtitleTracks.length > 0;
         } else {
-            // For native playback (e.g., Safari), check the video element's tracks.
             hasCaptions = video.textTracks && video.textTracks.length > 0;
         }
 
-        // 2. Determine if Audio Tracks are available
         const hasAudioTracks = hls && hls.audioTracks && hls.audioTracks.length > 1;
 
-        // 3. Safety Check: If we think captions are ON, but the channel has none, force OFF.
+        // Auto-disable captions if track is gone
         if (isCaptionsOn && !hasCaptions) {
             isCaptionsOn = false;
-            // We manually ensure HLS engine is off if it was previously on
             if(hls) hls.subtitleDisplay = false; 
             els.captionOverlay.classList.add('hidden');
         }
 
         const controls = [
-            { id: 'audio', icon: 'audio-lines', label: 'Audio', visible: hasAudioTracks, onClick: 'showAudioTrackMenu()' },
+            { id: 'audio', icon: 'audio-lines', label: 'Audio', visible: true, disabled: !hasAudioTracks, onClick: 'showAudioTrackMenu()' },
             { id: 'aspect', icon: 'scan', label: 'Aspect Ratio', visible: true, onClick: 'toggleAspect()' },
             { id: 'snapshot', icon: 'camera', label: 'Snapshot', visible: true, onClick: 'takeSnapshot()' },
-            { 
-                id: 'captions', 
-                icon: 'subtitles', 
-                label: 'Captions', 
-                visible: true, // Always render, but control via 'disabled' prop
-                disabled: !hasCaptions, // Disable if no tracks found
-                onClick: 'toggleCaptions()' 
-            },
+            { id: 'captions', icon: 'subtitles', label: 'Captions', visible: true, disabled: !hasCaptions, onClick: 'toggleCaptions()' },
             { id: 'pip', icon: 'picture-in-picture-2', label: 'PiP', visible: true, onClick: 'togglePiP()' },
             { id: 'stats', icon: 'bar-chart-2', label: 'Stats', visible: true, onClick: 'toggleStats()' },
         ];
@@ -2173,53 +2132,46 @@ function loadChannel(id) {
         
         controls.forEach(c => {
             if (c.visible) {
-                // Determine styling based on State AND Availability
+                // Styling
                 let colorClasses = 'text-gray-300 hover:text-white'; 
-                
-                // If active and enabled, show brand color
                 if (c.id === 'captions' && isCaptionsOn && !c.disabled) {
                     colorClasses = 'text-brand-400 hover:text-brand-300';
                 }
+                const interactionClasses = c.disabled ? 'opacity-30 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 active:scale-95';
 
-                // Interaction classes
-                // If disabled: low opacity, no pointer events (unclickable), not-allowed cursor
-                const interactionClasses = c.disabled 
-                    ? 'opacity-30 cursor-not-allowed pointer-events-none' 
-                    : 'hover:bg-white/10 active:scale-95';
-
-                // Desktop Button Construction
-                 desktopHTML += `
-                    <div class="relative group/tooltip" id="desktop-btn-${c.id}-container">
-                        <button 
-                            onclick="${c.disabled ? '' : c.onClick}" 
-                            id="desktop-btn-${c.id}" 
-                            ${c.disabled ? 'disabled' : ''}
-                            class="${colorClasses} ${interactionClasses} p-2.5 rounded-lg transition"
-                        >
-                            <i data-lucide="${c.icon}" class="w-5 h-5"></i>
-                        </button>
-                        ${!c.disabled ? `<span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-lg">${c.label}</span>` : ''}
-                    </div>`;
+                // Desktop
+                if(!isMobileMenuOnly) {
+                     desktopHTML += `
+                        <div class="relative group/tooltip" id="desktop-btn-${c.id}-container">
+                            <button onclick="${c.disabled ? '' : c.onClick}" id="desktop-btn-${c.id}" ${c.disabled ? 'disabled' : ''} class="${colorClasses} ${interactionClasses} p-2.5 rounded-lg transition">
+                                <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+                            </button>
+                            ${!c.disabled ? `<span class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-dark-surface border border-white/10 px-2 py-1 rounded-lg text-xs text-white opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl font-medium">${c.label}</span>` : ''}
+                        </div>`;
+                }
                 
-                // Mobile Button Construction
-                // We also hide disabled items from mobile menu to save space, or disable them. 
-                // Here we disable them to maintain consistency.
+                // Mobile
+                // FIX: If Audio, we pass event to stopPropagation, and do NOT close menu.
+                let clickAction = '';
+                if (c.id === 'audio') {
+                    clickAction = `event.stopPropagation(); showAudioTrackMenu();`;
+                } else {
+                    clickAction = `${c.onClick}; closeMobileMenu();`;
+                }
+                
                 mobileHTML += `
-                     <button 
-                        onclick="${c.disabled ? '' : c.onClick + '; closeMobileMenu()'}" 
-                        id="mobile-btn-${c.id}" 
-                        ${c.disabled ? 'disabled' : ''}
-                        class="w-full text-left flex items-center gap-3 p-3 rounded-xl transition text-sm text-gray-200 ${c.disabled ? 'opacity-30' : 'hover:bg-white/10'}"
-                    >
+                     <button onclick="${c.disabled ? '' : clickAction}" id="mobile-btn-${c.id}" ${c.disabled ? 'disabled' : ''} class="w-full text-left flex items-center gap-3 p-3 rounded-xl transition text-sm text-gray-200 ${c.disabled ? 'opacity-30' : 'hover:bg-white/10'}">
                         <i data-lucide="${c.icon}" class="w-4 h-4 ${c.id === 'captions' && isCaptionsOn && !c.disabled ? 'text-brand-400' : (c.disabled ? 'text-gray-500' : 'text-brand-400')}"></i> ${c.label}
                     </button>`;
             }
         });
         
-        els.desktopControls.innerHTML = desktopHTML;
-        if (mobileHTML) {
-            els.mobileMenuOptions.querySelector('div').innerHTML = mobileHTML;
-        }
+        if (!isMobileMenuOnly) els.desktopControls.innerHTML = desktopHTML;
+        
+        // Update Mobile Content
+        // We target the inner DIV to ensure we don't break the container
+        const mobContainer = document.querySelector('#mobileMenuOptions > div');
+        if (mobContainer) mobContainer.innerHTML = mobileHTML;
 
         lucide.createIcons();
     }
@@ -2513,33 +2465,178 @@ function loadChannel(id) {
                 settings.preferredLang = lang;
                 saveToLocal();
             }
-            showToast(`Audio set to ${name || 'Unknown'}`);
-            closeMobileMenu();
+            showToast(`Audio set to ${getAudioTrackLabel(hls.audioTracks[trackIndex])}`);
         }
     }
     
-    function showAudioTrackMenu() {
-        if (window.innerWidth < 1024) { 
-             if (!mobileMenuOpen) {
-                let audioOptionsHTML = '';
-                hls.audioTracks.forEach((track, index) => {
-                    const isActive = hls.audioTrack === index;
-                    audioOptionsHTML += `
-                        <button onclick="setAudioTrack(${index})" class="w-full text-left flex items-center justify-between gap-3 p-3 hover:bg-white/10 rounded-xl transition text-sm ${isActive ? 'text-brand-300' : 'text-gray-200'}">
-                            <span><i data-lucide="audio-lines" class="inline w-4 h-4 mr-3 text-brand-400"></i>${track.name}</span>
-                            ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
-                        </button>`;
-                });
-                els.mobileMenuOptions.querySelector('div').innerHTML = audioOptionsHTML;
-                lucide.createIcons();
-                toggleMobileMenu();
-            } else {
-                toggleMobileMenu();
-            }
-        } else {
-             showToast("Audio track selection is available in the 'More' menu on smaller screens.");
+    // ===== START: AUDIO MENU UPDATE =====
+    function getAudioTrackLabel(track) {
+        const name = track.name || 'Unnamed';
+        const lang = track.lang || '';
+
+        // Simple language code to full name mapping
+        const langMap = {
+            'eng': 'English', 'spa': 'Español', 'fra': 'Français', 'deu': 'Deutsch',
+            'jpn': '日本語', 'rus': 'Русский', 'por': 'Português', 'ita': 'Italiano',
+            'zho': '中文', 'ara': 'العربية', 'hin': 'हिन्दी'
+        };
+        const fullLang = langMap[lang.toLowerCase()] || lang.toUpperCase();
+
+        if (!lang) return name; // No language info, just return name
+        if (name.toLowerCase() === lang.toLowerCase()) return fullLang || name; // Name is just the lang code
+        if (name.toLowerCase().includes(fullLang.toLowerCase())) return name; // Name already contains language
+        
+        // If name is generic, prioritize language
+        if (name.toLowerCase().startsWith('track') || name.toLowerCase().startsWith('audio') || name.toLowerCase() === 'unknown') {
+            return fullLang || name;
+        }
+
+        return `${name} (${fullLang})`;
+    }
+
+    function closeDesktopAudioMenu() {
+        const menu = document.getElementById('desktopAudioMenu');
+        if (menu) {
+            menu.classList.add('hidden');
+            menu.classList.remove('flex');
+        }
+        isDesktopAudioMenuOpen = false;
+        document.removeEventListener('click', handleOutsideAudioMenuClick, true);
+
+        // RESTORE ALL TOOLTIPS by removing the inline style override
+		const tooltips = document.querySelectorAll('#controlsOverlay .group\\/tooltip span');
+		tooltips.forEach(t => { t.style.display = ''; });
+    }
+
+    function handleOutsideAudioMenuClick(event) {
+        const menu = document.getElementById('desktopAudioMenu');
+        const audioBtn = document.getElementById('desktop-btn-audio');
+        
+        if (menu && !menu.contains(event.target) && (!audioBtn || !audioBtn.contains(event.target))) {
+            closeDesktopAudioMenu();
         }
     }
+
+    function showAudioTrackMenu() {
+        // 1. Availability Check
+        if (!hls || !hls.audioTracks || hls.audioTracks.length <= 1) {
+            showToast("No additional audio tracks available.", "error");
+            return;
+        }
+
+        const isMobile = window.innerWidth < 1024;
+
+        // --- HELPER: Generate Track List HTML ---
+        const generateTrackList = (closeAction) => {
+            let html = '';
+            hls.audioTracks.forEach((track, index) => {
+                const isActive = hls.audioTrack === index;
+                const trackLabel = getAudioTrackLabel(track);
+                
+                // Minimal styling
+                const containerClass = isActive 
+                    ? 'bg-brand-500/20 text-brand-300 border border-brand-500/20' 
+                    : 'text-gray-300 hover:bg-white/5 hover:text-white border border-transparent';
+                
+                // Only show Index Number on Desktop
+                const indexBadge = !isMobile 
+                    ? `<div class="w-6 h-6 rounded flex items-center justify-center bg-white/5 shrink-0 text-[10px] font-mono opacity-70">${index}</div>` 
+                    : '';
+
+                html += `
+                    <button onclick="setAudioTrack(${index}); ${closeAction}" 
+                        class="group w-full text-left flex items-center justify-between gap-3 p-3 rounded-lg transition-all duration-200 mb-1 last:mb-0 ${containerClass}">
+                        <div class="flex items-center gap-3 min-w-0">
+                             ${indexBadge}
+                             <span class="truncate text-sm font-medium" title="${trackLabel}">${trackLabel}</span>
+                        </div>
+                        ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-brand-400 shrink-0"></i>' : ''}
+                    </button>`;
+            });
+            return html;
+        };
+
+        if (isMobile) {
+            // --- MOBILE LOGIC ---
+            
+            if (!mobileMenuOpen) {
+                toggleMobileMenu();
+            }
+
+            const menuContainer = document.querySelector('#mobileMenuOptions > div');
+            
+            if (menuContainer) {
+                menuContainer.innerHTML = `
+                    <div class="flex flex-col h-full animate-fade-in w-full">
+                        <div class="flex items-center gap-3 mb-2 pb-2 border-b border-white/10 px-1">
+                            <button id="mobileMenuBackBtn" onclick="buildPlayerControls(true)" class="p-1.5 hover:bg-white/10 rounded-lg transition text-gray-400 hover:text-white -ml-2">
+                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                            </button>
+                            <span class="font-bold text-white text-sm">Select Audio</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto no-scrollbar space-y-1">
+                            ${generateTrackList('buildPlayerControls(true)')} 
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+
+        } else {
+            // --- DESKTOP LOGIC ---
+            const menu = document.getElementById('desktopAudioMenu');
+            const audioBtn = document.getElementById('desktop-btn-audio');
+
+            if (isDesktopAudioMenuOpen) {
+                closeDesktopAudioMenu();
+                return;
+            }
+
+            // HIDE ALL TOOLTIPS using inline styles to override CSS hover states
+			const tooltips = document.querySelectorAll('#controlsOverlay .group\\/tooltip span');
+			tooltips.forEach(t => { t.style.display = 'none'; });
+
+            // Minimal Desktop HTML
+            menu.innerHTML = `
+                <div class="p-1.5">
+                    <div class="px-2 py-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 opacity-60 flex justify-between">
+                        <span>AUDIO TRACKS</span>
+                        <span>Shift+V+#</span>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto no-scrollbar">
+                        ${generateTrackList('closeDesktopAudioMenu()')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            // Apply "glass" class
+            menu.className = "absolute w-64 flex-col hidden origin-bottom glass rounded-xl shadow-2xl z-[60] transform-gpu animate-pop-up";
+
+            // --- POSITIONING ---
+            const btnRect = audioBtn.getBoundingClientRect();
+            const containerRect = els.videoContainer.getBoundingClientRect();
+            const menuWidth = 256; 
+
+            // Center
+            const btnCenter = btnRect.left + (btnRect.width / 2);
+            const leftPos = (btnCenter - containerRect.left) - (menuWidth / 2);
+            // Height Gap
+            const bottomPos = containerRect.bottom - btnRect.top + 24; 
+
+            menu.style.left = `${leftPos}px`;
+            menu.style.bottom = `${bottomPos}px`;
+
+            menu.classList.remove('hidden');
+            menu.classList.add('flex');
+            isDesktopAudioMenuOpen = true;
+
+            setTimeout(() => {
+                document.addEventListener('click', handleOutsideAudioMenuClick, true);
+            }, 0);
+        }
+    }
+    // ===== END: AUDIO MENU UPDATE =====
 
 
     // --- STATS & EVENTS ---
@@ -2722,6 +2819,7 @@ function loadChannel(id) {
          els.startScreen.style.display = 'flex';
          els.videoContainer.classList.remove('player-active');
          els.videoContainer.classList.remove('has-blurred-bg');
+         els.videoContainer.classList.remove('controls-hidden');
          stopBackgroundLoop();
          els.controlsOverlay.classList.add('ui-hidden');
          els.error.style.display = 'none';
@@ -2740,6 +2838,7 @@ function loadChannel(id) {
          updateFavButtonState();
          buildPlayerControls(); 
          closeMobileMenu();
+         closeDesktopAudioMenu();
     }
 
     function retryStream() {
