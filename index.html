@@ -100,7 +100,7 @@
         display: none;
     }
 
-/* Sleek Image Preview */
+	/* Sleek Image Preview */
     .image-preview-container {
         background-color: #020617; /* Slate 950 / dark-bg */
         box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
@@ -120,22 +120,54 @@
     .loader {
         width: 64px;
         height: 64px;
-        border-radius: 50%;
+        position: relative; /* Necessary for absolute positioning of pseudo-elements */
+        animation: spin 1.2s linear infinite;
+        /* Borders removed from here and moved to ::before to allow gradients */
+    }
+
+    /* Loader */
+    .loader {
+        width: 64px;
+        height: 64px;
         position: relative;
         animation: spin 1.2s linear infinite;
-        border: 4px solid transparent;
-        border-top-color: #6366f1; 
-        border-left-color: #818cf8; 
     }
+
+    /* Outer Ring: Gradient, Rounded Tips, 5px Thickness */
+    .loader::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        /* 
+           SVG Data:
+           1. Gradient from #818cf8 to #6366f1.
+           2. Stroke-width: 5 (Thinner).
+           3. Stroke-linecap: round (Rounded edges).
+           4. Shape: Semi-circle (180 degrees).
+        */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23818cf8'/%3E%3Cstop offset='100%25' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 32 3.5 A 28.5 28.5 0 0 1 32 60.5' fill='none' stroke='url(%23g)' stroke-width='5' stroke-linecap='round' /%3E%3C/svg%3E");
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    /* Inner Spinner: Solid Color, Rounded Tips, 5px Thickness */
     .loader::after {
         content: '';
         position: absolute;
-        inset: 6px;
-        border-radius: 50%;
-        border: 4px solid transparent;
-        border-bottom-color: #a5b4fc; 
+        inset: 0; /* Full size, the SVG handles the scaling/padding internally */
+        /* 
+           SVG Data:
+           1. Color: #a5b4fc.
+           2. Stroke-width: 5.
+           3. Stroke-linecap: round.
+           4. Shape: Quarter-circle (approx 90 degrees) centered in the middle.
+        */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M 32 48 A 16 16 0 0 0 48 32' fill='none' stroke='%23a5b4fc' stroke-width='5' stroke-linecap='round' /%3E%3C/svg%3E");
+        background-size: cover;
+        background-repeat: no-repeat;
         animation: spin 0.7s linear infinite reverse;
     }
+
     .mini-loader {
         width: 24px;
         height: 24px;
@@ -1104,7 +1136,8 @@
     let inactivityTimer;
     let animationFrameId = null;
     let sharedChannelData = null; 
-    let importWorker = null;
+	let importWorker = null;
+    let healthScanWorker = null;
     let isFullscreenMenuOpen = false;
     let currentBrowseTab = 'category';
     let importQueue = [];
@@ -1942,46 +1975,90 @@
         }
     }
 
-    async function scanAllChannelHealth() {
+    function scanAllChannelHealth() {
+        if (healthScanWorker) { // If a scan is already running, cancel it
+            healthScanWorker.terminate();
+            healthScanWorker = null;
+
+            const scanBtn = document.getElementById('scanHealthBtn');
+            const scanStatus = document.getElementById('scanHealthStatus');
+            scanStatus.textContent = "Scan cancelled.";
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = `<i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan`;
+            lucide.createIcons();
+            return;
+        }
+
         const scanBtn = document.getElementById('scanHealthBtn');
         const scanStatus = document.getElementById('scanHealthStatus');
         
         scanStatus.classList.remove('hidden');
-
         scanBtn.disabled = true;
-        scanBtn.innerHTML = `<div class="mini-loader"></div>`;
-
-        let online = 0;
-        let offline = 0;
-        const total = channels.length;
-
-        for (let i = 0; i < total; i++) {
-            const channel = channels[i];
-            scanStatus.textContent = `Scanning ${i + 1} of ${total}: ${channel.name}`;
-            try {
-                // Use a short timeout to avoid getting stuck on unresponsive URLs
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000);
-                // A HEAD request is a lightweight way to check if a URL is reachable.
-                // It doesn't guarantee the stream works, but it's a good first pass.
-                await fetch(channel.url, { method: 'HEAD', signal: controller.signal, mode: 'no-cors' });
-                clearTimeout(timeoutId);
-                await updateChannelHealth(channel.id, 'good');
-                online++;
-            } catch (error) {
-                await updateChannelHealth(channel.id, 'poor');
-                offline++;
-            }
-        }
-        
-        scanStatus.textContent = `Scan complete: ${online} online, ${offline} offline.`;
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = `<i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan`;
+        // Uses the existing mini-loader class, but overrides color to white for contrast on the blue button
+        scanBtn.innerHTML = `<div class="mini-loader !border-white/20 !border-t-white h-5 w-5 mx-auto"></div>`;
         lucide.createIcons();
-        showToast("Channel health scan finished.");
-        renderChannels(); // Re-render to reflect new health statuses
-    }
+        
+        // --- This is the Web Worker script ---
+        const workerScript = `
+            self.onmessage = async (e) => {
+                const { channels } = e.data;
+                const total = channels.length;
+                let online = 0;
+                let offline = 0;
 
+                for (let i = 0; i < total; i++) {
+                    const channel = channels[i];
+                    let status = 'poor'; // Default to poor
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 4000);
+                        // A HEAD request is a lightweight way to check if a URL is reachable.
+                        await fetch(channel.url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        status = 'good';
+                        online++;
+                    } catch (error) {
+                        offline++;
+                    }
+                    // Post progress back to the main thread
+                    self.postMessage({ 
+                        type: 'progress', 
+                        channelId: channel.id, 
+                        status: status,
+                        currentIndex: i + 1,
+                        total: total,
+                        name: channel.name
+                    });
+                }
+                // Signal completion
+                self.postMessage({ type: 'complete', online, offline });
+            };
+        `;
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        healthScanWorker = new Worker(URL.createObjectURL(blob));
+
+        // --- Handle messages from the worker ---
+        healthScanWorker.onmessage = (e) => {
+            const { type, ...data } = e.data;
+            if (type === 'progress') {
+                updateChannelHealth(data.channelId, data.status);
+                scanStatus.textContent = `Scanning ${data.currentIndex} of ${data.total}: ${data.name}`;
+            } else if (type === 'complete') {
+                scanStatus.textContent = `Scan complete: ${data.online} online, ${data.offline} offline.`;
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = `<i data-lucide="activity" class="inline w-4 h-4 mr-2"></i> Start Scan`;
+                lucide.createIcons();
+                showToast("Channel health scan finished.");
+                
+                healthScanWorker.terminate();
+                healthScanWorker = null;
+                // No need to re-render all channels, as they were updated one-by-one
+            }
+        };
+        
+        // Start the worker
+        healthScanWorker.postMessage({ channels: channels });
+    }
 
     // --- PLAYER ENGINE ---
     
@@ -2168,19 +2245,23 @@
 
                 if (data.fatal) {
                     let errorMessage = `Could not play "${channel.name}". `;
+                    // Provide more specific, helpful error messages
                     switch (data.details) {
                         case Hls.ErrorDetails.MANIFEST_LOAD_ERROR:
+                        case Hls.ErrorDetails.MANIFEST_LOAD_TIMEOUT:
+                            errorMessage += "The stream could not be loaded. It may be offline, geo-restricted, or the URL is incorrect. Using a VPN may help with regional blocks.";
+                            break;
                         case Hls.ErrorDetails.MANIFEST_PARSING_ERROR:
-                            errorMessage += "The stream is offline or the URL is incorrect.";
+                            errorMessage += "The stream's playlist file is invalid or corrupted.";
                             break;
                         case Hls.ErrorDetails.NETWORK_ERROR:
-                            errorMessage += "A network error occurred. Please check your connection.";
+                            errorMessage += "A network error occurred. Please check your internet connection and try again.";
                             break;
                         case Hls.ErrorDetails.MEDIA_ERROR:
-                             errorMessage += "A media error occurred. The stream may be corrupted.";
+                             errorMessage += "A media playback error occurred. The stream format might be unsupported or corrupted.";
                              break;
                         default:
-                            errorMessage += "An unknown error occurred.";
+                            errorMessage += `An unexpected error occurred (${data.details}). The stream may be incompatible.`;
                     }
                     hls.destroy();
                     showError(errorMessage);
