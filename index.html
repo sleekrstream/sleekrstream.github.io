@@ -1339,12 +1339,25 @@
             // Do not show tooltips on touch devices
             if ('ontouchstart' in window) return;
 
+            // Check if any modal or overlay is open. If so, do not show any tooltips.
+            const isModalOpen = document.querySelector('.fixed[id$="Modal"]:not(.hidden), #sidebarBackdrop:not(.hidden)');
+            if (isModalOpen || isFullscreenMenuOpen || isDesktopAudioMenuOpen) {
+                hideTooltip(); // Ensure any stray tooltip is hidden
+                return;
+            }
+
             const target = e.target.closest('[data-tooltip]');
             if (target && !target.closest('.controls-wrapper')) {
                 lastMouseEvent = e; // Store initial event
                 target.addEventListener('mousemove', mouseMoveHandler);
 
                 tooltipTimer = setTimeout(() => {
+                    // FIX: Re-check for an open modal right before showing the tooltip to prevent race conditions.
+                    const isModalOpenNow = document.querySelector('.fixed[id$="Modal"]:not(.hidden), #sidebarBackdrop:not(.hidden)');
+                    if (isModalOpenNow || isFullscreenMenuOpen || isDesktopAudioMenuOpen) {
+                        return; // Abort if a modal opened during the delay.
+                    }
+
                     const tooltipText = target.getAttribute('data-tooltip');
                     if (tooltipText) {
                         tooltipEl.textContent = tooltipText;
@@ -1364,8 +1377,7 @@
             }
         }, true);
 
-        // FIX: Add a mousedown listener to the body to hide the tooltip on any click.
-        // This ensures that clicking a button to open a modal will correctly hide the tooltip.
+        // Add a mousedown listener to the body to hide the tooltip on any click.
         document.body.addEventListener('mousedown', hideTooltip, true);
     }
 
