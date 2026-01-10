@@ -421,10 +421,10 @@
 
     <!-- Search & Filter -->
     <div class="p-4 border-b border-dark-border space-y-3 shrink-0 sidebar-content bg-dark-surface/30">
-        <div class="relative group focus-within:ring-2 focus-within:ring-brand-500/50 rounded-xl transition-all">
+        <div class="relative group">
             <i data-lucide="search" class="absolute left-3.5 top-3 w-4 h-4 text-gray-500 group-focus-within:text-brand-400 transition-colors"></i>
             <input type="text" id="searchInput" placeholder="Find channels..." 
-                class="w-full bg-dark-bg border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-all placeholder-gray-500 text-gray-200 shadow-sm">
+                class="w-full bg-dark-bg border border-dark-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all placeholder-gray-500 text-gray-200 shadow-sm">
         </div>
         
         <div class="flex gap-2">
@@ -1114,6 +1114,7 @@
     let urlValidationTimeout;
     let currentSortMode = 'default'; // 'default', 'health_asc', 'health_desc'
     let captionTrackListener = null; // Listener reference for cleaning up
+	let hasPlayedOnce = false; // Tracks if the video has started playing
     
     // --- KEYBOARD SHORTCUT STATE ---
     let keysPressed = {}; // Tracks currently held keys
@@ -1261,8 +1262,34 @@
         renderBrowsePlaylists();
         setupUrlValidation();
         initCustomTooltips();
-		
 		initFadingTips();
+
+        // ===== START: DISABLE RIGHT-CLICK & DEV TOOLS =====
+        // Disable right-clicking on the entire page
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable common developer tools shortcuts.
+        // Note: This is not foolproof and can be bypassed (e.g., through browser menus).
+        // It serves as a basic deterrent.
+        document.addEventListener('keydown', function (e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+            }
+            // Ctrl+Shift+I
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.keyCode === 73)) {
+                e.preventDefault();
+            }
+            // Ctrl+Shift+J
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.keyCode === 74)) {
+                e.preventDefault();
+            }
+            // Ctrl+U
+            if (e.ctrlKey && (e.key === 'U' || e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+        // ===== END: DISABLE RIGHT-CLICK & DEV TOOLS =====
         
         els.searchInput.addEventListener('input', renderChannels);
         els.inpLogo.addEventListener('input', updateLogoPreview);
@@ -1302,82 +1329,63 @@
         const tooltipEl = document.getElementById('customTooltip');
         if (!tooltipEl) return;
         let tooltipTimer;
-        let lastMouseEvent; // To store the latest mouse event for accurate positioning
+        let lastTarget;
 
-        const positionTooltip = (e) => {
-            if (!e) return; // Safety check
-            const offset = 15;
-            let x = e.clientX + offset;
-            let y = e.clientY + offset;
-            
-            const tooltipWidth = tooltipEl.offsetWidth;
-            const tooltipHeight = tooltipEl.offsetHeight;
-
-            // Adjust position if tooltip goes off-screen
-            if (x + tooltipWidth > window.innerWidth) {
-                x = e.clientX - tooltipWidth - offset;
-            }
-            if (y + tooltipHeight > window.innerHeight) {
-                y = e.clientY - tooltipHeight - offset;
-            }
-
-            tooltipEl.style.left = `${x}px`;
-            tooltipEl.style.top = `${y}px`;
-        };
-        
         const hideTooltip = () => {
             clearTimeout(tooltipTimer);
             tooltipEl.classList.remove('visible');
         };
 
-        // This handler updates the last known mouse position
-        const mouseMoveHandler = (e) => {
-            lastMouseEvent = e;
-        };
-
-        document.body.addEventListener('mouseenter', (e) => {
-            // Do not show tooltips on touch devices
+        document.body.addEventListener('mouseover', (e) => {
             if ('ontouchstart' in window) return;
 
-            // Check if any modal or overlay is open. If so, do not show any tooltips.
-            const isModalOpen = document.querySelector('.fixed[id$="Modal"]:not(.hidden), #sidebarBackdrop:not(.hidden)');
-            if (isModalOpen || isFullscreenMenuOpen || isDesktopAudioMenuOpen) {
-                hideTooltip(); // Ensure any stray tooltip is hidden
-                return;
-            }
-
             const target = e.target.closest('[data-tooltip]');
-            if (target && !target.closest('.controls-wrapper')) {
-                lastMouseEvent = e; // Store initial event
-                target.addEventListener('mousemove', mouseMoveHandler);
+            if (target) {
+                const isModalOpen = document.querySelector('.fixed[id$="Modal"]:not(.hidden), #sidebarBackdrop:not(.hidden)');
+                if (isModalOpen || isFullscreenMenuOpen || isDesktopAudioMenuOpen) {
+                    hideTooltip();
+                    return;
+                }
 
+                // If we moved to a new target, hide the old tooltip immediately
+                if (lastTarget && lastTarget !== target) {
+                    hideTooltip();
+                }
+                lastTarget = target;
+
+                // Always clear previous timer to prevent multiple tooltips
+                clearTimeout(tooltipTimer);
+                
                 tooltipTimer = setTimeout(() => {
-                    // FIX: Re-check for an open modal right before showing the tooltip to prevent race conditions.
-                    const isModalOpenNow = document.querySelector('.fixed[id$="Modal"]:not(.hidden), #sidebarBackdrop:not(.hidden)');
-                    if (isModalOpenNow || isFullscreenMenuOpen || isDesktopAudioMenuOpen) {
-                        return; // Abort if a modal opened during the delay.
-                    }
-
                     const tooltipText = target.getAttribute('data-tooltip');
-                    if (tooltipText) {
-                        tooltipEl.textContent = tooltipText;
-                        positionTooltip(lastMouseEvent); 
-                        tooltipEl.classList.add('visible');
-                    }
-                }, 1000); // 1-second delay
-            }
-        }, true);
+                    tooltipEl.textContent = tooltipText;
+                    
+                    const targetRect = target.getBoundingClientRect();
+                    const tooltipRect = tooltipEl.getBoundingClientRect();
 
-        document.body.addEventListener('mouseleave', (e) => {
+                    let top = targetRect.bottom + 8;
+                    let left = targetRect.left + (targetRect.width / 2) - (tooltipEl.offsetWidth / 2);
+
+                    // Adjust if off-screen
+                    if (left < 0) left = 8;
+                    if (left + tooltipEl.offsetWidth > window.innerWidth) left = window.innerWidth - tooltipEl.offsetWidth - 8;
+                    if (top + tooltipEl.offsetHeight > window.innerHeight) top = targetRect.top - tooltipEl.offsetHeight - 8;
+
+                    tooltipEl.style.left = `${left}px`;
+                    tooltipEl.style.top = `${top}px`;
+                    tooltipEl.classList.add('visible');
+                }, 500); // 0.5-second delay
+            }
+        });
+
+        document.body.addEventListener('mouseout', (e) => {
             const target = e.target.closest('[data-tooltip]');
-             if (target && !target.closest('.controls-wrapper')) {
+            if (target) {
+                lastTarget = null;
                 hideTooltip();
-                // Clean up the event listener to prevent memory leaks
-                target.removeEventListener('mousemove', mouseMoveHandler);
             }
-        }, true);
+        });
 
-        // Add a mousedown listener to the body to hide the tooltip on any click.
         document.body.addEventListener('mousedown', hideTooltip, true);
     }
 
@@ -1691,12 +1699,11 @@
 
     function updateGroupDropdown() {
         const groups = [...new Set(channels.map(c => c.group || 'Uncategorized'))].sort();
-        // Added 'truncate' class below
         let html = `<div onclick="selectGroup('all')" class="truncate px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === 'all' ? 'bg-brand-500/10 text-brand-300' : ''}">All Groups</div>`;
         
         groups.forEach(g => {
-            // Added 'truncate' class and a 'title' attribute so users can see full text on hover
-            html += `<div onclick="selectGroup('${g}')" title="${g}" class="truncate px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === g ? 'bg-brand-500/10 text-brand-300' : ''}">${g}</div>`;
+            // REMOVED title="${g}" from here
+            html += `<div onclick="selectGroup('${g}')" class="truncate px-3 py-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm text-gray-300 transition-colors ${currentFilterGroup === g ? 'bg-brand-500/10 text-brand-300' : ''}">${g}</div>`;
         });
         els.groupOptionsList.innerHTML = html;
     }
@@ -1978,22 +1985,20 @@
 
     // --- PLAYER ENGINE ---
     
-    // ===== START: BALANCED PERFORMANCE UPGRADE =====
-    // This configuration provides a robust buffer without being overly
-    // aggressive, offering a stable experience similar to VLC.
+    // ===== START: AGGRESSIVE PERFORMANCE CONFIG (VLC-LIKE) =====
     const hlsConfig = {
-        // ABR configs for smarter quality switching
-        abrBandwidthFactor: 0.8,      // Be less conservative with bandwidth estimates
-        abrBandwidthUpFactor: 0.6,    // Switch up to higher quality more readily
+        // More aggressive ABR to switch up quality faster
+        abrBandwidthFactor: 0.95,
+        abrBandwidthUpFactor: 0.8,
         
-        // Buffer configs for stability
-        maxBufferLength: 30,          // Target buffer of 30 seconds
-        maxMaxBufferLength: 60,       // Allow up to 60 seconds on fast connections
+        // Larger buffer settings for stability
+        maxBufferLength: 60,       // Target a 60-second buffer
+        maxMaxBufferLength: 180,   // Allow up to 3 minutes on fast connections
         
-        // Pre-loading configs for faster starts
+        // Start loading media segments immediately for faster startup
         startFragPrefetch: true,
     };
-    // ===== END: BALANCED PERFORMANCE UPGRADE =====
+    // ===== END: AGGRESSIVE PERFORMANCE CONFIG =====
 
     function getCurrentChannelList() {
         const query = els.searchInput.value.toLowerCase();
@@ -2037,9 +2042,11 @@
         loadChannel(currentList[prevIndex].id);
     }
 
-function loadChannel(id) {
+	function loadChannel(id) {
         const channel = channels.find(c => c.id === id);
         if (!channel || (id === currentChannelId && hls)) return;
+		
+		hasPlayedOnce = false; // Reset the playback flag for the new stream
 
         // --- NEW: Reset Caption State & Overlay ---
         // Ensure state is clean before the new stream loads
@@ -2653,12 +2660,13 @@ function loadChannel(id) {
                     ? `<div class="w-6 h-6 rounded flex items-center justify-center bg-white/5 shrink-0 text-[10px] font-mono opacity-70">${index}</div>` 
                     : '';
 
+                // REMOVED title="${trackLabel}" from here
                 html += `
                     <button onclick="setAudioTrack(${index}); ${closeAction}" 
                         class="group w-full text-left flex items-center justify-between gap-3 p-3 rounded-lg transition-all duration-200 mb-1 last:mb-0 ${containerClass}">
                         <div class="flex items-center gap-3 min-w-0">
                              ${indexBadge}
-                             <span class="truncate text-sm font-medium" title="${trackLabel}">${trackLabel}</span>
+                             <span class="truncate text-sm font-medium">${trackLabel}</span>
                         </div>
                         ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-brand-400 shrink-0"></i>' : ''}
                     </button>`;
@@ -2761,17 +2769,26 @@ function loadChannel(id) {
 
     function setupPlayerEvents() {
         let bufferTimeout;
+
         video.addEventListener('waiting', () => {
+            clearTimeout(bufferTimeout); // Always clear previous timer
             bufferTimeout = setTimeout(() => {
+                // If an error is showing, do nothing.
                 if (els.error.style.display !== 'none') return;
 
-                els.loading.style.display = 'flex';
-                els.loadingTitle.textContent = "Buffering...";
-                els.loadingStatus.textContent = "The stream is buffering due to a slow or unstable connection.";
-                updateNetworkHealth('fair');
-            }, 1000); // Only show buffering message if it's longer than 1 second
+                // LOGIC: Only show "Buffering..." if the video has already played once.
+                // This prevents it from overriding the initial, more descriptive loading messages.
+                if (hasPlayedOnce) {
+                    els.loading.style.display = 'flex';
+                    els.loadingTitle.textContent = "Buffering...";
+                    els.loadingStatus.textContent = "Reconnecting due to unstable connection...";
+                    updateNetworkHealth('fair');
+                }
+            }, 1500); // Wait 1.5s to confirm it's a real buffer event
         });
+
         video.addEventListener('playing', () => {
+            hasPlayedOnce = true; // Set flag: the stream is successfully playing.
             clearTimeout(bufferTimeout);
             els.loading.style.display = 'none';
             updateNetworkHealth('good');
@@ -2786,8 +2803,13 @@ function loadChannel(id) {
             // Refresh controls in case caption tracks were added late
             buildPlayerControls();
         });
+
         video.addEventListener('loadedmetadata', () => {
-            els.loading.style.display = 'none';
+            // This event often fires before 'playing', so we can use it to hide
+            // the initial "Connecting..." message for a smoother transition.
+            if (!hasPlayedOnce) {
+                 els.loadingStatus.textContent = "Video data received, starting playback...";
+            }
         });
     }
 
