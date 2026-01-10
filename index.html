@@ -1325,18 +1325,22 @@
             tooltipEl.style.top = `${y}px`;
         };
         
+        const hideTooltip = () => {
+            clearTimeout(tooltipTimer);
+            tooltipEl.classList.remove('visible');
+        };
+
         // This handler updates the last known mouse position
         const mouseMoveHandler = (e) => {
             lastMouseEvent = e;
         };
 
         document.body.addEventListener('mouseenter', (e) => {
-            // FIX: Do not show tooltips on touch devices
+            // Do not show tooltips on touch devices
             if ('ontouchstart' in window) return;
 
             const target = e.target.closest('[data-tooltip]');
             if (target && !target.closest('.controls-wrapper')) {
-                // FIX: Track mouse movement to prevent position jitter
                 lastMouseEvent = e; // Store initial event
                 target.addEventListener('mousemove', mouseMoveHandler);
 
@@ -1344,7 +1348,6 @@
                     const tooltipText = target.getAttribute('data-tooltip');
                     if (tooltipText) {
                         tooltipEl.textContent = tooltipText;
-                        // Position based on the LAST known mouse position, not the initial one
                         positionTooltip(lastMouseEvent); 
                         tooltipEl.classList.add('visible');
                     }
@@ -1355,12 +1358,15 @@
         document.body.addEventListener('mouseleave', (e) => {
             const target = e.target.closest('[data-tooltip]');
              if (target && !target.closest('.controls-wrapper')) {
-                clearTimeout(tooltipTimer);
-                tooltipEl.classList.remove('visible');
-                // FIX: Clean up the event listener to prevent memory leaks
+                hideTooltip();
+                // Clean up the event listener to prevent memory leaks
                 target.removeEventListener('mousemove', mouseMoveHandler);
             }
         }, true);
+
+        // FIX: Add a mousedown listener to the body to hide the tooltip on any click.
+        // This ensures that clicking a button to open a modal will correctly hide the tooltip.
+        document.body.addEventListener('mousedown', hideTooltip, true);
     }
 
     // --- BLURRED BACKGROUND ---
