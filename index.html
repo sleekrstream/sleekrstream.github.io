@@ -1301,9 +1301,11 @@
     function initCustomTooltips() {
         const tooltipEl = document.getElementById('customTooltip');
         if (!tooltipEl) return;
-        let tooltipTimer; // Variable to hold the timer
+        let tooltipTimer;
+        let lastMouseEvent; // To store the latest mouse event for accurate positioning
 
         const positionTooltip = (e) => {
+            if (!e) return; // Safety check
             const offset = 15;
             let x = e.clientX + offset;
             let y = e.clientY + offset;
@@ -1311,6 +1313,7 @@
             const tooltipWidth = tooltipEl.offsetWidth;
             const tooltipHeight = tooltipEl.offsetHeight;
 
+            // Adjust position if tooltip goes off-screen
             if (x + tooltipWidth > window.innerWidth) {
                 x = e.clientX - tooltipWidth - offset;
             }
@@ -1321,16 +1324,28 @@
             tooltipEl.style.left = `${x}px`;
             tooltipEl.style.top = `${y}px`;
         };
+        
+        // This handler updates the last known mouse position
+        const mouseMoveHandler = (e) => {
+            lastMouseEvent = e;
+        };
 
         document.body.addEventListener('mouseenter', (e) => {
+            // FIX: Do not show tooltips on touch devices
+            if ('ontouchstart' in window) return;
+
             const target = e.target.closest('[data-tooltip]');
             if (target && !target.closest('.controls-wrapper')) {
-                // Set a timer to show the tooltip after a delay
+                // FIX: Track mouse movement to prevent position jitter
+                lastMouseEvent = e; // Store initial event
+                target.addEventListener('mousemove', mouseMoveHandler);
+
                 tooltipTimer = setTimeout(() => {
                     const tooltipText = target.getAttribute('data-tooltip');
                     if (tooltipText) {
                         tooltipEl.textContent = tooltipText;
-                        positionTooltip(e); // Position based on the initial hover event
+                        // Position based on the LAST known mouse position, not the initial one
+                        positionTooltip(lastMouseEvent); 
                         tooltipEl.classList.add('visible');
                     }
                 }, 1000); // 1-second delay
@@ -1340,9 +1355,10 @@
         document.body.addEventListener('mouseleave', (e) => {
             const target = e.target.closest('[data-tooltip]');
              if (target && !target.closest('.controls-wrapper')) {
-                // When the mouse leaves, clear the timer and hide the tooltip
                 clearTimeout(tooltipTimer);
                 tooltipEl.classList.remove('visible');
+                // FIX: Clean up the event listener to prevent memory leaks
+                target.removeEventListener('mousemove', mouseMoveHandler);
             }
         }, true);
     }
